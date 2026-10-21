@@ -460,7 +460,7 @@ async function encryptJSONToB64(obj){
 async function unlockWithPassword(pass){
   let cfg;
   try { cfg = await (await fetch(RAW_BASE + KEYS_PATH + '?t=' + Date.now(), {cache:'no-store'})).json(); }
-  catch(e){ return null; }
+  catch(e){ throw new Error('Could not reach the key file — check the connection and reload.'); }
   const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
   const kek = await crypto.subtle.deriveKey(
     {name:'PBKDF2', hash:'SHA-256', salt: bytesFromB64(cfg.kdf.salt), iterations: cfg.kdf.iter},
@@ -931,13 +931,18 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 /* ===================== lock screen ===================== */
 async function doUnlock(){
   const el = document.getElementById('lockMsg');
-  const pass = document.getElementById('lockPass').value;
+  // copied passwords arrive with stray spaces and invisible characters
+  const pass = document.getElementById('lockPass').value
+    .replace(/[ ​⁠﻿]/g, '').trim();
   if (!pass) return;
   el.className = 'msg'; el.textContent = 'Checking…';
   await new Promise(r => setTimeout(r, 30));   // let it paint before PBKDF2 blocks
-  const acc = await unlockWithPassword(pass);
+  let acc;
+  try { acc = await unlockWithPassword(pass); }
+  catch(e){ el.className = 'msg err'; el.textContent = e.message; return; }
   if (!acc){
-    el.className = 'msg err'; el.textContent = 'That password does not fit.';
+    el.className = 'msg err';
+    el.textContent = 'That password does not fit. ' + pass.length + ' characters read.';
     return;
   }
   localStorage.setItem('pd_dk', acc.k);
