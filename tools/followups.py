@@ -286,11 +286,22 @@ def _local():
     return _LOCAL
 
 
+def clean(v):
+    """Credentials copied out of a web page carry invisible characters —
+    Google shows app passwords in four groups separated by non-breaking
+    spaces, which smtplib then refuses to encode."""
+    if not isinstance(v, str):
+        return v
+    for ch in ("\u00a0", "\u200b", "\u2060", "\ufeff"):
+        v = v.replace(ch, " " if ch == "\u00a0" else "")
+    return v.strip()
+
+
 def recipients(key):
     v = cfg(key) or ""
     if isinstance(v, list):
-        return [str(x).strip() for x in v if str(x).strip()]
-    return [a.strip() for a in str(v).replace(";", ",").split(",") if a.strip()]
+        return [clean(str(x)) for x in v if clean(str(x))]
+    return [clean(a) for a in str(v).replace(";", ",").split(",") if clean(a)]
 
 
 # --------------------------------------------------------------------------
@@ -300,16 +311,19 @@ def send_email(subject, body, to=None):
     to = to or recipients("mail_to")
     if not to:
         raise RuntimeError("no mail_to configured")
-    user = cfg("smtp_user")
-    pw = cfg("smtp_pass")
+    user = clean(cfg("smtp_user"))
+    pw = clean(cfg("smtp_pass"))
+    host = clean(cfg("smtp_host", "smtp.gmail.com"))
+    if "gmail" in host:
+        pw = pw.replace(" ", "")   # a Gmail app password is 16 characters, shown in four groups
     if not (user and pw):
         raise RuntimeError("no smtp_user / smtp_pass configured")
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = cfg("mail_from") or user
+    msg["From"] = clean(cfg("mail_from")) or user
     msg["To"] = ", ".join(to)
     msg.set_content(body)
-    with smtplib.SMTP(cfg("smtp_host", "smtp.gmail.com"), int(cfg("smtp_port", 587)), timeout=30) as s:
+    with smtplib.SMTP(host, int(clean(str(cfg("smtp_port", 587)))), timeout=30) as s:
         s.starttls()
         s.login(user, pw)
         s.send_message(msg)
@@ -320,9 +334,9 @@ def _gmail_access_token():
     """Swap the long-lived refresh token for an hour-long access token."""
     import urllib.parse, urllib.request
     data = urllib.parse.urlencode({
-        "client_id": cfg("gmail_client_id"),
-        "client_secret": cfg("gmail_client_secret"),
-        "refresh_token": cfg("gmail_refresh_token"),
+        "client_id": clean(cfg("gmail_client_id")),
+        "client_secret": clean(cfg("gmail_client_secret")),
+        "refresh_token": clean(cfg("gmail_refresh_token")),
         "grant_type": "refresh_token",
     }).encode()
     with urllib.request.urlopen("https://oauth2.googleapis.com/token", data=data, timeout=30) as r:
@@ -359,8 +373,8 @@ def send_whatsapp(short_text, to=None):
     """WhatsApp Cloud API. A message we start needs an approved template, and
     template variables cannot hold line breaks — so this sends one line."""
     import urllib.request, urllib.error
-    token = cfg("wa_token")
-    phone_id = cfg("wa_phone_id")
+    token = clean(cfg("wa_token"))
+    phone_id = clean(cfg("wa_phone_id"))
     template = cfg("wa_template", "powerdash_followups")
     lang = cfg("wa_lang", "en")
     to = to or recipients("wa_to")

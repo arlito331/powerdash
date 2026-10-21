@@ -74,20 +74,28 @@ def main():
             pass
 
     server = http.server.HTTPServer(("127.0.0.1", port), Handler)
-    threading.Thread(target=server.handle_request, daemon=True).start()
+    threading.Thread(target=server.serve_forever, daemon=True).start()
 
-    print("Opening Google in your browser…")
+    print("\n" + "=" * 70)
+    print("OPEN THIS LINK (cmd-click it, or copy it into Chrome):")
+    print("=" * 70)
+    print("\n" + auth_url + "\n")
     print("Sign in as the address the mail should come FROM.")
-    print('If it warns the app is not verified: Advanced -> Go to ... (unsafe). It is your own app.\n')
-    if not webbrowser.open(auth_url):
-        print("Open this link yourself:\n" + auth_url + "\n")
+    print("If it warns the app is not verified: Advanced -> Go to ... (unsafe).")
+    print("It is your own app.\n")
+    print("Waiting for you to approve… (ten minutes, ctrl-C to stop)\n")
+    try:
+        webbrowser.open(auth_url)
+    except Exception:
+        pass
 
-    for _ in range(600):          # wait up to five minutes for the approval
+    for _ in range(1200):         # wait up to ten minutes for the approval
         if box:
             break
         time.sleep(0.5)
+    server.shutdown()
     if "code" not in box:
-        sys.exit("No approval came back. Run it again.")
+        sys.exit("No approval came back. Run it again and click the link above.")
 
     data = urllib.parse.urlencode({
         "code": box["code"], "client_id": client_id, "client_secret": client_secret,
