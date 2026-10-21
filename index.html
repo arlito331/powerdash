@@ -236,19 +236,19 @@ a{color:inherit;}
 <div class="modal-back" id="leadModal">
   <div class="modal">
     <div class="card-title" id="leadModalTitle">New lead</div>
-    <div class="field"><label>Name of the deal</label><input id="fName" placeholder="MOP Chiriquí — municipal patching"/></div>
+    <div class="field"><label>Name of the deal</label><input id="fName" placeholder="Municipal patching contract"/></div>
     <div class="field-row">
-      <div class="field"><label>Company / entity</label><input id="fCompany" placeholder="Alcaldía de David"/></div>
+      <div class="field"><label>Company / entity</label><input id="fCompany" placeholder="City hall, ministry or contractor"/></div>
       <div class="field"><label>Owner</label><select id="fOwner"><option>AA</option><option>JK</option></select></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Contact person</label><input id="fContact" placeholder="Ing. Pérez"/></div>
-      <div class="field"><label>WhatsApp / phone</label><input id="fPhone" placeholder="+507 6000 0000"/></div>
+      <div class="field"><label>Contact person</label><input id="fContact" placeholder="Who you deal with"/></div>
+      <div class="field"><label>WhatsApp / phone</label><input id="fPhone" placeholder="+507 0000 0000"/></div>
     </div>
     <div class="field"><label>Email</label><input id="fEmail" placeholder="contact@example.com"/></div>
     <div class="field-row">
       <div class="field"><label>Country</label><input id="fCountry" placeholder="Panama"/></div>
-      <div class="field"><label>City</label><input id="fCity" placeholder="David"/></div>
+      <div class="field"><label>City</label><input id="fCity" placeholder="City"/></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Stage</label><select id="fStage"></select></div>
@@ -258,7 +258,7 @@ a{color:inherit;}
       <div class="field"><label>Tons (potential)</label><input id="fTons" type="number" step="0.5" placeholder="20"/></div>
       <div class="field"><label>Value US$</label><input id="fUsd" type="number" step="100" placeholder="30000"/></div>
     </div>
-    <div class="field"><label>Next action</label><input id="fAction" placeholder="Call Ing. Pérez for the trial result"/></div>
+    <div class="field"><label>Next action</label><input id="fAction" placeholder="Call about the trial result"/></div>
     <div class="field-row">
       <div class="field"><label>Next action due</label><input id="fDate" type="date"/></div>
       <div class="field"><label>Last contact</label><input id="fLast" type="date"/></div>
@@ -266,7 +266,7 @@ a{color:inherit;}
     <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Anything worth remembering"></textarea></div>
     <div class="field">
       <label>Where is it — search or tap the map</label>
-      <div style="display:flex;gap:8px;"><input id="fPlace" placeholder="David, Panama" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}"/><button class="btn small secondary" onclick="searchPlace()">Find</button></div>
+      <div style="display:flex;gap:8px;"><input id="fPlace" placeholder="City, country" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}"/><button class="btn small secondary" onclick="searchPlace()">Find</button></div>
       <div class="search-results" id="placeResults"></div>
       <div id="pickMap" style="margin-top:8px;"></div>
       <div class="field-hint" id="coordOut">No point set — the lead just won't show on the map.</div>
@@ -297,6 +297,28 @@ a{color:inherit;}
   </div>
 </div>
 
+<!-- ============ LOCK ============ -->
+<div class="modal-back open" id="lockScreen" style="z-index:10000;background:var(--bg);">
+  <div class="modal" style="max-width:320px;border:none;background:none;margin-top:14vh;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:34px;">
+      <div class="brand-mark" style="cursor:default;">
+        <svg viewBox="0 0 24 24" fill="#fff" width="14" height="14"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div style="font-size:17px;font-weight:600;letter-spacing:-.3px;">Power<span style="color:var(--brand);">Dash</span></div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="lockPass" autocomplete="current-password" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();doUnlock();}"/>
+    </div>
+    <button class="btn" style="width:100%;padding:12px;" onclick="doUnlock()">Unlock</button>
+    <div class="msg" id="lockMsg" style="text-align:center;"></div>
+    <div class="field-hint" style="text-align:center;margin-top:18px;">
+      The leads in this repo are encrypted. Your password decrypts them here in the browser.
+    </div>
+  </div>
+</div>
+
 <!-- ============ SETUP ============ -->
 <div class="modal-back" id="setupModal">
   <div class="modal" style="max-width:400px;">
@@ -314,6 +336,7 @@ a{color:inherit;}
     <div class="btn-row">
       <button class="btn" onclick="saveSetup()">Save</button>
       <button class="btn secondary" onclick="closeSetup()">Close</button>
+      <button class="btn secondary small" onclick="lockApp()" style="margin-left:auto;">Sign out</button>
     </div>
     <div class="field-hint" style="margin-top:14px;">Follow-up rule: a lead with no due date gets flagged at <b>15, 30 and 45 days</b> after the last contact. After 45 days it asks you to push it or park it.</div>
   </div>
@@ -323,7 +346,8 @@ a{color:inherit;}
 <script>
 /* ===================== config ===================== */
 const REPO       = 'arlito331/powerdash';
-const DATA_PATH  = 'data/leads.json';
+const DATA_PATH  = 'data/leads.enc';   // AES-GCM ciphertext (see tools/encrypt_data.py)
+const KEYS_PATH  = 'data/keys.json';
 const API_BASE   = `https://api.github.com/repos/${REPO}/contents/`;
 const IS_LOCAL   = ['localhost','127.0.0.1','::1'].includes(location.hostname) || location.protocol === 'file:';
 const RAW_BASE   = IS_LOCAL ? './' : `https://raw.githubusercontent.com/${REPO}/main/`;
@@ -393,25 +417,83 @@ function pinColor(lead){
   return w === 'them' ? '#3F7FE0' : w === 'factory' ? '#9b7fe0' : '#F0A030';
 }
 
+/* ===================== encryption =====================
+   The repo is public, so everything lead-shaped in it is AES-256-GCM
+   ciphertext (iv || ct). One master key encrypts data/leads.enc, and
+   data/keys.json holds that key wrapped under each person's password.
+   Signing in IS the decryption — without a password this repo is noise. */
+function bytesFromB64(str){ return Uint8Array.from(atob(str), c => c.charCodeAt(0)); }
+function b64FromBytes(buf){
+  const u = new Uint8Array(buf); let out = '';
+  for (let i = 0; i < u.length; i += 0x8000) out += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(out);
+}
+let _dataKey = null;
+async function dataKey(){
+  if (_dataKey) return _dataKey;
+  const b = localStorage.getItem('pd_dk');
+  if (!b) return null;
+  _dataKey = await crypto.subtle.importKey('raw', bytesFromB64(b), 'AES-GCM', false, ['encrypt','decrypt']);
+  return _dataKey;
+}
+const isLocked = () => !localStorage.getItem('pd_dk');
+async function aesDecrypt(bytes){
+  const k = await dataKey();
+  if (!k) throw new Error('locked');
+  return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM', iv: bytes.slice(0,12)}, k, bytes.slice(12)));
+}
+async function aesEncrypt(bytes){
+  const k = await dataKey();
+  if (!k) throw new Error('locked');
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, k, bytes));
+  const out = new Uint8Array(iv.length + ct.length);
+  out.set(iv); out.set(ct, iv.length);
+  return out;
+}
+async function decryptJSON(bytes){ return JSON.parse(new TextDecoder().decode(await aesDecrypt(bytes))); }
+async function encryptJSONToB64(obj){
+  return b64FromBytes(await aesEncrypt(new TextEncoder().encode(JSON.stringify(obj, null, 1))));
+}
+// Try the typed password against every wrapped copy of the key. Success gives
+// {user, role, k}; who has an account stays secret either way.
+async function unlockWithPassword(pass){
+  let cfg;
+  try { cfg = await (await fetch(RAW_BASE + KEYS_PATH + '?t=' + Date.now(), {cache:'no-store'})).json(); }
+  catch(e){ return null; }
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const kek = await crypto.subtle.deriveKey(
+    {name:'PBKDF2', hash:'SHA-256', salt: bytesFromB64(cfg.kdf.salt), iterations: cfg.kdf.iter},
+    km, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  for (const e of cfg.entries){
+    try {
+      const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv: bytesFromB64(e.iv)}, kek, bytesFromB64(e.ct));
+      return JSON.parse(new TextDecoder().decode(pt));
+    } catch(_){ /* not this entry — keep trying */ }
+  }
+  return null;
+}
+
 /* ===================== load / save ===================== */
 async function loadLeads(){
   let remote = null;
-  // With an access code we read through the API: it works on a private repo
-  // and it is always fresh (the public file lags a few minutes behind).
+  // With an access code we read through the API — always fresh, where the
+  // public file can lag a few minutes behind. Either way it comes back as
+  // ciphertext and the password we unlocked with turns it into leads.
   if (token){
     try {
       const r = await fetch(API_BASE + DATA_PATH + '?ref=main&cb=' + Date.now(),
                             {headers:ghHeaders(), cache:'no-store'});
       if (r.ok){
         const j = await r.json();
-        remote = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+        remote = await decryptJSON(bytesFromB64(j.content.replace(/\n/g,'')));
       }
     } catch(e){ /* fall through to the public file */ }
   }
   if (!remote) try {
     const r = await fetch(RAW_BASE + DATA_PATH + '?cb=' + Date.now(), {cache:'no-store'});
-    if (r.ok) remote = await r.json();
-  } catch(e){ /* offline — fall through */ }
+    if (r.ok) remote = await decryptJSON(new Uint8Array(await r.arrayBuffer()));
+  } catch(e){ /* offline, or the password does not fit this file */ }
   const local = JSON.parse(localStorage.getItem('pd_leads') || 'null');
   if (Array.isArray(remote)){
     dataLoadOK = true;
@@ -454,12 +536,12 @@ async function pushRemote(){
     if (head.ok){
       const j = await head.json();
       sha = j.sha;
-      const remote = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+      const remote = await decryptJSON(bytesFromB64(j.content.replace(/\n/g,'')));
       if (Array.isArray(remote)) leads = mergeLists(remote, leads);
     }
     const body = {
       message: `leads update (${who})`,
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(leads, null, 1)))),
+      content: await encryptJSONToB64(leads),
       branch : 'main'
     };
     if (sha) body.sha = sha;
@@ -846,6 +928,33 @@ function showTab(t){
 }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+/* ===================== lock screen ===================== */
+async function doUnlock(){
+  const el = document.getElementById('lockMsg');
+  const pass = document.getElementById('lockPass').value;
+  if (!pass) return;
+  el.className = 'msg'; el.textContent = 'Checking…';
+  await new Promise(r => setTimeout(r, 30));   // let it paint before PBKDF2 blocks
+  const acc = await unlockWithPassword(pass);
+  if (!acc){
+    el.className = 'msg err'; el.textContent = 'That password does not fit.';
+    return;
+  }
+  localStorage.setItem('pd_dk', acc.k);
+  localStorage.setItem('pd_user', acc.user);
+  _dataKey = null;
+  document.getElementById('lockPass').value = '';
+  el.textContent = '';
+  document.getElementById('lockScreen').classList.remove('open');
+  await start();
+}
+function lockApp(){
+  localStorage.removeItem('pd_dk');
+  _dataKey = null; leads = [];
+  closeSetup();
+  document.getElementById('lockScreen').classList.add('open');
+}
+
 /* ===================== boot ===================== */
 function fillSelects(){
   const opts = STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
@@ -854,13 +963,21 @@ function fillSelects(){
   const countries = [...new Set(leads.map(l => l.country).filter(Boolean))].sort();
   document.getElementById('qCountry').innerHTML = '<option value="">All countries</option>' + countries.map(c => `<option>${esc(c)}</option>`).join('');
 }
+async function start(){
+  await loadLeads();
+  fillSelects();
+  renderAll();
+}
 (async function boot(){
   who   = localStorage.getItem('pd_who') || 'AA';
   token = localStorage.getItem('pd_gh_token') || '';
   paintWho();
-  await loadLeads();
-  fillSelects();
-  renderAll();
+  if (isLocked()){
+    document.getElementById('lockPass').focus();
+    return;                     // nothing loads until a password unlocks it
+  }
+  document.getElementById('lockScreen').classList.remove('open');
+  await start();
 })();
 </script>
 </body>

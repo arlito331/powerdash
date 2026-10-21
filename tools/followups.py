@@ -15,14 +15,15 @@ Email needs these environment variables (GitHub repo secrets in CI):
     SMTP_HOST (default smtp.gmail.com), SMTP_PORT (default 587),
     SMTP_USER, SMTP_PASS, MAIL_TO (comma-separated), MAIL_FROM (optional)
 """
-import json, os, smtplib, sys
+import json, os, smtplib, sys, urllib.error
 from datetime import date, datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
 
 MILESTONES = [15, 30, 45]
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ROOT / "data" / "leads.json"
+DATA = ROOT / "data" / "leads.json"      # only on a dev machine
+ENC = ROOT / "data" / "leads.enc"       # what the repo actually holds
 
 STAGES = {
     "contacted": ("Contacted", "us"),
@@ -77,7 +78,24 @@ def due_info(lead):
     return "overdue", 0, "No next action and no last contact — decide something"
 
 
+def decrypt(blob):
+    """The repo holds AES-256-GCM ciphertext (iv || ct). The key is the same
+    master key the browser gets from your password; here it comes from the
+    POWERDASH_KEY secret, base64, so the job can read the leads without one."""
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        sys.exit("needs the cryptography package: pip install cryptography")
+    key = clean(cfg("powerdash_key"))
+    if not key:
+        sys.exit("data/leads.enc is encrypted but POWERDASH_KEY is not set")
+    import base64
+    return json.loads(AESGCM(base64.b64decode(key)).decrypt(blob[:12], blob[12:], None))
+
+
 def load():
+    if ENC.exists():
+        return decrypt(ENC.read_bytes())
     with open(DATA, encoding="utf-8") as f:
         return json.load(f)
 
@@ -485,8 +503,14 @@ def fetch_remote():
     """Pull the live leads file from GitHub so a Mac-side run is never stale."""
     import urllib.request
     repo = cfg("repo", "arlito331/powerdash")
-    url = f"https://raw.githubusercontent.com/{repo}/main/data/leads.json"
-    with urllib.request.urlopen(url, timeout=30) as r:
+    base = f"https://raw.githubusercontent.com/{repo}/main/data/"
+    try:
+        with urllib.request.urlopen(base + "leads.enc", timeout=30) as r:
+            return decrypt(r.read())
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+    with urllib.request.urlopen(base + "leads.json", timeout=30) as r:
         return json.loads(r.read().decode())
 
 

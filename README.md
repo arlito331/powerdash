@@ -34,31 +34,50 @@ It lives in `dueInfo()` in `index.html` and `due_info()` in
 
 ## Going online
 
-1. Create the GitHub repo `powerdash` and upload this folder (GitHub
-   Desktop — the usual way, tokens in remote URLs are dead).
-2. Settings → Pages → deploy from `main`, root.
-3. Optional domain: GoDaddy CNAME `powerdash` → `arlito331.github.io`, then add
-   a `CNAME` file containing `powerdash.powerfixinc.com`. **DNS first**, or
-   Pages breaks.
-4. Add the access code on each phone: gear icon → paste a GitHub token with
-   Contents read/write on this repo. Without it the app still works, but
-   changes stay on that phone.
+The repo holds **ciphertext only**, so it is safe to make public.
 
-### Before it goes public — read this
+- `data/leads.enc` — the leads, AES-256-GCM (iv || ciphertext)
+- `data/keys.json` — the master key wrapped under each person's password
+  (PBKDF2-SHA256, 600,000 rounds). Public, and useless without a password.
+- Passwords and a copy of the master key live in `APPS/KEYS`, never in the repo:
+  `powerdash-passwords.json`, `powerdash-master-key.txt`
 
-GitHub Pages needs a **public** repo on the free plan, and `data/leads.json` is
-plain text: customer names, contacts and money would be readable by anyone who
-finds the repo. Two ways out, the same choice LogPothole faced:
+Signing in *is* the decryption: the password unwraps the key in the browser and
+nothing readable ever reaches GitHub. A wrong password simply finds no entry it
+can open.
 
-- **Encrypt it** like LogPothole does (`tools/encrypt_data.py` there): the repo
-  holds ciphertext only and a password unlocks it in the browser. Recommended.
-- **Keep it private** and use it locally / on a paid plan.
+### Turning it on, in order
 
-Until one of those is done, keep the repo private and run it locally:
+1. **Add the key to the repo secrets** — `POWERDASH_KEY`, the one line inside
+   `APPS/KEYS/powerdash-master-key.txt`. Without it the morning email cannot
+   read the leads and the job fails.
+2. **Push** (GitHub Desktop).
+3. **Make it public** — Settings → General → bottom of the page → Change
+   visibility → Public.
+4. **Turn on Pages** — Settings → Pages → Source: Deploy from a branch,
+   Branch: `main`, folder: `/ (root)`. A minute later it is live at
+   https://arlito331.github.io/powerdash/ — which is what the hub tile already
+   points at.
+5. **Hand Joel his password** from the password file. Each person types theirs
+   once per device; after that the browser remembers the key.
+
+Optional custom domain: GoDaddy CNAME `powerdash` → `arlito331.github.io`,
+then add a `CNAME` file containing `powerdash.powerfixinc.com`. **DNS first**,
+or Pages breaks.
+
+### Adding or removing a person
+
+Edit `APPS/KEYS/powerdash-passwords.json`, then:
 
 ```
-python3 -m http.server 8130 --directory /Users/aal/Dropbox/PowerFix/APPS/powerdash
+python3 tools/encrypt_data.py          # dry run
+python3 tools/encrypt_data.py apply    # rewraps keys.json, leaves the data alone
 ```
+
+Commit `data/keys.json`. Removing someone's entry locks them out of future
+reads, though anyone who already unlocked keeps the key their browser cached —
+to cut that off, generate a new master key (delete the file in KEYS, rerun,
+re-encrypt) and reissue passwords.
 
 ## The reminders — WhatsApp, iMessage, email
 
@@ -165,7 +184,7 @@ run by hand from the Actions tab — useful the first time.
 
 ## Data
 
-`data/leads.json` — a list of leads:
+`data/leads.enc` holds this, encrypted — a list of leads:
 
 ```json
 {
@@ -181,7 +200,8 @@ run by hand from the Actions tab — useful the first time.
 ```
 
 The seven leads in there now are **examples** — the banner on the dashboard
-clears them in one tap.
+clears them in one tap. The plaintext from before encryption is backed up at
+`APPS/KEYS/leads.json.pre-encryption`.
 
 Two phones editing at once merge by `updated_at`, newest wins per lead, and the
 app refuses to publish if it could not read the shared file first — the two

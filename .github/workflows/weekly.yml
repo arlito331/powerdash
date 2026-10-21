@@ -19,12 +19,14 @@ jobs:
       WA_TOKEN:    ${{ secrets.WA_TOKEN }}
       WA_PHONE_ID: ${{ secrets.WA_PHONE_ID }}
       WA_TEMPLATE: ${{ secrets.WA_TEMPLATE }}
+      POWERDASH_KEY: ${{ secrets.POWERDASH_KEY }}
       GMAIL_CLIENT_ID:     ${{ secrets.GMAIL_CLIENT_ID }}
       GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
       GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
       GMAIL_SENDER:        ${{ secrets.GMAIL_SENDER }}
     steps:
       - uses: actions/checkout@v4
+      - run: pip install --quiet cryptography
       - name: Standing — you and Joel
         env:
           MAIL_TO: ${{ secrets.MAIL_TO }}

@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: pip install --quiet cryptography
       - name: Send the follow-up list
         env:
           SMTP_HOST:    ${{ secrets.SMTP_HOST }}
@@ -35,6 +36,7 @@ jobs:
           WA_PHONE_ID:  ${{ secrets.WA_PHONE_ID }}
           WA_TO:        ${{ secrets.WA_TO }}
           WA_TEMPLATE:  ${{ secrets.WA_TEMPLATE }}
+          POWERDASH_KEY: ${{ secrets.POWERDASH_KEY }}
           GMAIL_CLIENT_ID:     ${{ secrets.GMAIL_CLIENT_ID }}
           GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
           GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
