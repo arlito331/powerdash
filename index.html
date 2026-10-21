@@ -396,7 +396,19 @@ function pinColor(lead){
 /* ===================== load / save ===================== */
 async function loadLeads(){
   let remote = null;
-  try {
+  // With an access code we read through the API: it works on a private repo
+  // and it is always fresh (the public file lags a few minutes behind).
+  if (token){
+    try {
+      const r = await fetch(API_BASE + DATA_PATH + '?ref=main&cb=' + Date.now(),
+                            {headers:ghHeaders(), cache:'no-store'});
+      if (r.ok){
+        const j = await r.json();
+        remote = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+      }
+    } catch(e){ /* fall through to the public file */ }
+  }
+  if (!remote) try {
     const r = await fetch(RAW_BASE + DATA_PATH + '?cb=' + Date.now(), {cache:'no-store'});
     if (r.ok) remote = await r.json();
   } catch(e){ /* offline — fall through */ }
