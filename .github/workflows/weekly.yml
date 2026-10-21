@@ -1,0 +1,33 @@
+name: Weekly standing
+
+# 08:00 Panama (13:00 UTC) every Monday: the standing for you and Joel, then
+# the short pipeline report for the factory. Change --via email to --via auto
+# once WhatsApp is set up at Meta.
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    env:
+      SMTP_HOST:   ${{ secrets.SMTP_HOST }}
+      SMTP_PORT:   ${{ secrets.SMTP_PORT }}
+      SMTP_USER:   ${{ secrets.SMTP_USER }}
+      SMTP_PASS:   ${{ secrets.SMTP_PASS }}
+      WA_TOKEN:    ${{ secrets.WA_TOKEN }}
+      WA_PHONE_ID: ${{ secrets.WA_PHONE_ID }}
+      WA_TEMPLATE: ${{ secrets.WA_TEMPLATE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Standing — you and Joel
+        env:
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          WA_TO:   ${{ secrets.WA_TO }}
+        run: python3 tools/followups.py standing --send --via email --always
+      - name: Pipeline — factory
+        env:
+          MAIL_TO: ${{ secrets.MAIL_TO_FACTORY || secrets.MAIL_TO }}
+          WA_TO:   ${{ secrets.WA_TO_FACTORY || secrets.WA_TO }}
+        run: python3 tools/followups.py factory --send --via email --always

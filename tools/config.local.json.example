@@ -1,0 +1,20 @@
+{
+  "_comment": "Copy to config.local.json and fill in. Never committed. Environment variables of the same name (upper case) win over this file.",
+
+  "channels_note": "Channels are chosen on the command line: --via auto (WhatsApp, then iMessage, then email — first one that works), --via all, or --via whatsapp,email",
+
+  "imessage_to": ["+50760000000", "joelkhafif21@gmail.com"],
+
+  "wa_token": "EAAG... permanent token from Meta",
+  "wa_phone_id": "1234567890 (WhatsApp Business phone number ID)",
+  "wa_to": ["+50760000000", "+50761111111"],
+  "wa_template": "powerdash_followups",
+  "wa_lang": "en",
+
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": "587",
+  "smtp_user": "aa@powerfixinc.com",
+  "smtp_pass": "gmail app password, 16 letters",
+  "mail_to": "aa@powerfixinc.com, joelkhafif21@gmail.com",
+  "mail_to_factory": "factory@example.com"
+}

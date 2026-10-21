@@ -1,0 +1,40 @@
+name: Daily follow-ups
+
+# 07:00 Panama (12:00 UTC), Monday to Friday.
+# Email for now. Once the WhatsApp template is approved at Meta, change the
+# default below from 'email' to 'auto' and it sends WhatsApp instead, falling
+# back to email by itself. (iMessage cannot run here — only a Mac can send it.)
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      always:
+        description: 'Send even if nothing is late'
+        type: boolean
+        default: false
+      via:
+        description: 'email, auto, all, or a list like whatsapp,email'
+        type: string
+        default: email
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send the follow-up list
+        env:
+          SMTP_HOST:    ${{ secrets.SMTP_HOST }}
+          SMTP_PORT:    ${{ secrets.SMTP_PORT }}
+          SMTP_USER:    ${{ secrets.SMTP_USER }}
+          SMTP_PASS:    ${{ secrets.SMTP_PASS }}
+          MAIL_TO:      ${{ secrets.MAIL_TO }}
+          WA_TOKEN:     ${{ secrets.WA_TOKEN }}
+          WA_PHONE_ID:  ${{ secrets.WA_PHONE_ID }}
+          WA_TO:        ${{ secrets.WA_TO }}
+          WA_TEMPLATE:  ${{ secrets.WA_TEMPLATE }}
+        run: >
+          python3 tools/followups.py due --send
+          --via ${{ inputs.via || 'email' }}
+          ${{ inputs.always && '--always' || '' }}

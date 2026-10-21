@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0D0D0D"/>
+<title>PowerDash — PowerFix Pipeline &amp; Follow-ups</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230b0e14' stroke='%2346c97e' stroke-width='1.2'/%3E%3Ccircle cx='16' cy='16' r='12.5' fill='none' stroke='%2346c97e' stroke-opacity='.35' stroke-width='1.4'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%2346c97e' stroke-opacity='.28' stroke-width='1.2'/%3E%3Cline x1='2' y1='16' x2='30' y2='16' stroke='%2346c97e' stroke-opacity='.15'/%3E%3Cline x1='16' y1='2' x2='16' y2='30' stroke='%2346c97e' stroke-opacity='.15'/%3E%3Cpath d='M16 16 L16 3.5 A12.5 12.5 0 0 1 27.3 22.5 Z' fill='%2346c97e' fill-opacity='.3'/%3E%3Ccircle cx='23' cy='11' r='1.7' fill='%23F0A030'/%3E%3Ccircle cx='9' cy='19' r='1.4' fill='%23FF3B3B'/%3E%3Ccircle cx='19' cy='23' r='1.3' fill='%233F7FE0'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+:root{ --bg:#0D0D0D; --panel:#1A1A1B; --border:#262626; --text:#f5f5f7; --brand:#E8442A; --muted:#999; --dim:#555; --accent:#46C97E; --blue:#3F7FE0; --red:#FF3B3B; --orange:#F0A030; --purple:#9b7fe0; }
+*{margin:0;padding:0;box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+input,select,textarea,button{touch-action:manipulation;font-family:inherit;}
+a{color:inherit;}
+
+.header{display:flex;align-items:center;gap:12px;padding:14px 20px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid var(--border);background:var(--panel);}
+.brand-mark{width:26px;height:26px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;transition:opacity .15s;}
+.brand-mark:hover{opacity:.8;}
+.header-text{flex:1;min-width:0;}
+.header-eyebrow{font-size:9px;letter-spacing:3px;color:var(--accent);font-weight:700;margin-bottom:3px;}
+.header-title{font-size:16px;font-weight:700;}
+.header-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.gear-btn{position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:6px;opacity:.6;flex-shrink:0;color:var(--text);}
+.gear-btn:hover{opacity:1;}
+.gear-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--dim);}
+.gear-dot.ok{background:var(--accent);}
+.who-chip{flex-shrink:0;background:rgba(63,127,224,.15);border:1px solid rgba(63,127,224,.5);color:#7fa8e8;font-size:9px;font-weight:800;letter-spacing:1.5px;border-radius:5px;padding:4px 8px;cursor:pointer;}
+
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);padding:0 20px;overflow-x:auto;}
+.tab-btn{padding:14px 4px;margin-right:26px;background:none;border:none;color:var(--dim);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+
+.view{display:none;padding:20px;max-width:960px;margin:0 auto;}
+.view.active{display:block;}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;}
+.card-title{font-size:11px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:14px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:10px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+.field input,.field textarea,.field select{width:100%;background:#0a0a0a;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:9px 12px;font-size:13px;outline:none;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:54px;}
+.field-hint{font-size:10px;color:var(--dim);margin-top:5px;line-height:1.5;}
+.field-row{display:flex;gap:10px;flex-wrap:wrap;}
+.field-row .field{flex:1;min-width:130px;}
+
+.btn{background:var(--accent);color:#04170c;border:none;border-radius:5px;padding:10px 18px;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;}
+.btn:hover{background:#5bdb90;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn.secondary:hover{background:#202021;color:var(--text);}
+.btn.small{padding:6px 12px;font-size:10px;}
+.btn.danger{background:var(--red);color:#fff;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+.summary-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.summary-tile{flex:1;min-width:88px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.summary-tile .n{font-size:22px;font-weight:800;}
+.summary-tile .l{font-size:9px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-top:2px;}
+.summary-tile.red .n{color:var(--red);}
+.summary-tile.orange .n{color:var(--orange);}
+.summary-tile.green .n{color:var(--accent);}
+
+.banner{background:rgba(240,160,48,.08);border:1px solid rgba(240,160,48,.35);color:var(--orange);border-radius:8px;padding:12px 16px;font-size:12px;line-height:1.6;margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.banner.hide{display:none;}
+.banner-grow{flex:1;min-width:180px;}
+
+.group-label{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin:18px 0 8px;}
+.group-label:first-child{margin-top:0;}
+
+.row{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;border-left:3px solid var(--border);}
+.row.ov{border-left-color:var(--red);}
+.row.today{border-left-color:var(--orange);}
+.row.soon{border-left-color:var(--blue);}
+.row.calm{border-left-color:var(--accent);}
+.row-head{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;}
+.row-head:hover{background:#202021;}
+.row-badge{flex-shrink:0;width:54px;height:54px;border-radius:8px;background:#0a0a0a;border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.row-badge .d{font-size:15px;font-weight:800;line-height:1;}
+.row-badge .l{font-size:7px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-top:3px;}
+.row-info{flex:1;min-width:0;}
+.row-name{font-size:13px;font-weight:600;}
+.row-meta{font-size:10px;color:var(--dim);margin-top:3px;font-family:ui-monospace,Menlo,monospace;}
+.row-action{font-size:11px;color:var(--muted);margin-top:4px;}
+.row-action b{color:var(--text);font-weight:600;}
+.row-chev{flex-shrink:0;color:var(--dim);font-size:11px;transition:transform .15s;}
+.row.open .row-chev{transform:rotate(90deg);}
+.row-detail{display:none;border-top:1px solid var(--border);padding:16px 14px;background:#161617;}
+.row.open .row-detail{display:block;}
+
+.chip{display:inline-block;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;border-radius:4px;padding:3px 7px;margin-right:6px;}
+.chip.us{background:rgba(240,160,48,.15);border:1px solid rgba(240,160,48,.5);color:#e8b968;}
+.chip.them{background:rgba(63,127,224,.15);border:1px solid rgba(63,127,224,.5);color:#7fa8e8;}
+.chip.factory{background:rgba(155,127,224,.15);border:1px solid rgba(155,127,224,.5);color:#b8a3ec;}
+.chip.stage{background:#0a0a0a;border:1px solid var(--border);color:var(--muted);}
+.chip.owner{background:rgba(70,201,126,.12);border:1px solid rgba(70,201,126,.45);color:var(--accent);}
+
+.log-line{font-size:11px;color:var(--muted);padding:6px 0;border-bottom:1px solid #1f1f20;line-height:1.5;}
+.log-line:last-child{border-bottom:none;}
+.log-line .when{font-family:ui-monospace,Menlo,monospace;color:var(--dim);margin-right:8px;}
+
+#leadMap{height:420px;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px;}
+#pickMap{height:220px;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:8px;}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--muted);}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;}
+
+.report-box{background:#0a0a0a;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;line-height:1.7;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;color:#d8d8d8;margin-bottom:10px;max-height:420px;overflow:auto;}
+.msg{font-size:11px;margin-top:10px;min-height:14px;}
+.msg.ok{color:var(--accent);}
+.msg.err{color:var(--red);}
+.search-results:not(:empty){margin-top:6px;background:#0a0a0a;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.sr-result{padding:9px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #1c1c1d;}
+.sr-result:last-child{border-bottom:none;}
+.sr-result:hover{background:#1f1f20;}
+.sr-result .sr-sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.modal-back{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.72);align-items:flex-start;justify-content:center;padding:20px;overflow:auto;}
+.modal-back.open{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;width:100%;max-width:440px;margin:auto;}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar input,.toolbar select{background:#0a0a0a;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px 10px;font-size:12px;outline:none;}
+.toolbar input{flex:1;min-width:140px;}
+.empty{color:var(--dim);font-size:12px;padding:18px 0;text-align:center;}
+.leaflet-popup-content-wrapper{background:#1A1A1B;color:#fff;border-radius:8px;}
+.leaflet-popup-tip{background:#1A1A1B;}
+.pop-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+.pop-meta{font-size:10px;color:#999;margin-bottom:6px;font-family:ui-monospace,Menlo,monospace;}
+.pop-act{font-size:11px;color:#ddd;line-height:1.5;}
+.pop-links{margin-top:8px;display:flex;gap:10px;font-size:11px;}
+.pop-links a{color:var(--accent);text-decoration:none;font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="brand-mark" href="https://developers.powerfixinc.com" title="Back to PowerFix Developers">
+    <svg viewBox="0 0 24 24" fill="#fff" width="13" height="13"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+  </a>
+  <div class="header-text">
+    <div class="header-eyebrow">POWERFIX</div>
+    <div class="header-title">PowerDash</div>
+    <div class="header-sub" id="hdrSub">Pipeline &amp; follow-ups</div>
+  </div>
+  <button class="who-chip" id="whoChip" onclick="switchWho()">AA</button>
+  <button class="gear-btn" onclick="openSetup()">⚙<span class="gear-dot" id="gearDot"></span></button>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="today" onclick="showTab('today')">Today</button>
+  <button class="tab-btn" data-tab="leads" onclick="showTab('leads')">Leads</button>
+  <button class="tab-btn" data-tab="map" onclick="showTab('map')">Map</button>
+  <button class="tab-btn" data-tab="reports" onclick="showTab('reports')">Reports</button>
+</div>
+
+<!-- ============ TODAY ============ -->
+<div class="view active" id="view-today">
+  <div class="banner hide" id="sampleBanner">
+    <div class="banner-grow"><b>These are example leads</b> so you can see how it looks. Clear them once you add your own.</div>
+    <button class="btn small secondary" onclick="clearSamples()">Clear examples</button>
+  </div>
+  <div class="banner hide" id="loadBanner"><div class="banner-grow" id="loadBannerText"></div></div>
+
+  <div class="summary-row">
+    <div class="summary-tile red"><div class="n" id="tOverdue">0</div><div class="l">Overdue</div></div>
+    <div class="summary-tile orange"><div class="n" id="tToday">0</div><div class="l">Today</div></div>
+    <div class="summary-tile"><div class="n" id="tWeek">0</div><div class="l">This week</div></div>
+    <div class="summary-tile"><div class="n" id="tActive">0</div><div class="l">Live leads</div></div>
+    <div class="summary-tile green"><div class="n" id="tTons">0</div><div class="l">Tons in play</div></div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:18px;">
+    <button class="btn" onclick="shareWhatsApp(buildStanding())">Send standing on WhatsApp</button>
+    <button class="btn secondary" onclick="showTab('reports')">See reports</button>
+    <button class="btn secondary" onclick="openLead()">+ New lead</button>
+  </div>
+
+  <div id="dueList"></div>
+</div>
+
+<!-- ============ LEADS ============ -->
+<div class="view" id="view-leads">
+  <div class="toolbar">
+    <input id="qSearch" placeholder="Search name, company, city…" oninput="renderLeads()"/>
+    <select id="qStage" onchange="renderLeads()"></select>
+    <select id="qCountry" onchange="renderLeads()"></select>
+    <button class="btn small" onclick="openLead()">+ New</button>
+  </div>
+  <div id="leadList"></div>
+</div>
+
+<!-- ============ MAP ============ -->
+<div class="view" id="view-map">
+  <div id="leadMap"></div>
+  <div class="legend">
+    <span><i style="background:#FF3B3B"></i>Overdue — our move, late</span>
+    <span><i style="background:#F0A030"></i>Waiting on us</span>
+    <span><i style="background:#3F7FE0"></i>Waiting on them</span>
+    <span><i style="background:#9b7fe0"></i>Waiting on factory</span>
+    <span><i style="background:#46C97E"></i>Signed / active</span>
+    <span><i style="background:#555"></i>Parked</span>
+  </div>
+</div>
+
+<!-- ============ REPORTS ============ -->
+<div class="view" id="view-reports">
+  <div class="card">
+    <div class="card-title">Internal standing — for you &amp; Joel</div>
+    <div class="report-box" id="repStanding"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="shareWhatsApp(buildStanding())">WhatsApp</button>
+      <button class="btn secondary" onclick="copyText(buildStanding(),this)">Copy</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Factory report — short</div>
+    <div class="report-box" id="repFactory"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="shareWhatsApp(buildFactory())">WhatsApp</button>
+      <button class="btn secondary" onclick="copyText(buildFactory(),this)">Copy</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Follow-ups due — the email you get</div>
+    <div class="report-box" id="repDue"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="shareWhatsApp(buildDueReport())">WhatsApp</button>
+      <button class="btn secondary" onclick="copyText(buildDueReport(),this)">Copy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LEAD EDITOR ============ -->
+<div class="modal-back" id="leadModal">
+  <div class="modal">
+    <div class="card-title" id="leadModalTitle">New lead</div>
+    <div class="field"><label>Name of the deal</label><input id="fName" placeholder="MOP Chiriquí — municipal patching"/></div>
+    <div class="field-row">
+      <div class="field"><label>Company / entity</label><input id="fCompany" placeholder="Alcaldía de David"/></div>
+      <div class="field"><label>Owner</label><select id="fOwner"><option>AA</option><option>JK</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Contact person</label><input id="fContact" placeholder="Ing. Pérez"/></div>
+      <div class="field"><label>WhatsApp / phone</label><input id="fPhone" placeholder="+507 6000 0000"/></div>
+    </div>
+    <div class="field"><label>Email</label><input id="fEmail" placeholder="contact@example.com"/></div>
+    <div class="field-row">
+      <div class="field"><label>Country</label><input id="fCountry" placeholder="Panama"/></div>
+      <div class="field"><label>City</label><input id="fCity" placeholder="David"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Stage</label><select id="fStage"></select></div>
+      <div class="field"><label>Waiting on</label><select id="fWaiting"><option value="us">Us</option><option value="them">Them</option><option value="factory">Factory</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Tons (potential)</label><input id="fTons" type="number" step="0.5" placeholder="20"/></div>
+      <div class="field"><label>Value US$</label><input id="fUsd" type="number" step="100" placeholder="30000"/></div>
+    </div>
+    <div class="field"><label>Next action</label><input id="fAction" placeholder="Call Ing. Pérez for the trial result"/></div>
+    <div class="field-row">
+      <div class="field"><label>Next action due</label><input id="fDate" type="date"/></div>
+      <div class="field"><label>Last contact</label><input id="fLast" type="date"/></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Anything worth remembering"></textarea></div>
+    <div class="field">
+      <label>Where is it — search or tap the map</label>
+      <div style="display:flex;gap:8px;"><input id="fPlace" placeholder="David, Panama" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}"/><button class="btn small secondary" onclick="searchPlace()">Find</button></div>
+      <div class="search-results" id="placeResults"></div>
+      <div id="pickMap" style="margin-top:8px;"></div>
+      <div class="field-hint" id="coordOut">No point set — the lead just won't show on the map.</div>
+    </div>
+    <div class="msg" id="leadMsg"></div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn" onclick="saveLead()">Save</button>
+      <button class="btn secondary" onclick="closeLead()">Cancel</button>
+      <button class="btn danger small" id="delBtn" onclick="deleteLead()" style="margin-left:auto;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOUCH / LOG ============ -->
+<div class="modal-back" id="touchModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="card-title" id="touchTitle">Log a touch</div>
+    <div class="field"><label>What happened</label><textarea id="tNote" placeholder="Called, they say results come Friday"></textarea></div>
+    <div class="field-row">
+      <div class="field"><label>Date</label><input id="tDate" type="date"/></div>
+      <div class="field"><label>Next action due</label><input id="tNext" type="date"/></div>
+    </div>
+    <div class="field"><label>Next action</label><input id="tAction" placeholder="Leave empty to keep the current one"/></div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveTouch()">Save</button>
+      <button class="btn secondary" onclick="closeTouch()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETUP ============ -->
+<div class="modal-back" id="setupModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="card-title">Setup</div>
+    <div class="field">
+      <label>Who are you</label>
+      <select id="sWho"><option value="AA">AA — Ariel</option><option value="JK">JK — Joel</option></select>
+    </div>
+    <div class="field">
+      <label>Access code (GitHub)</label>
+      <input id="sToken" placeholder="ghp_…" autocomplete="off"/>
+      <div class="field-hint">Without it the app still works on this phone, but your changes stay here instead of reaching Joel. Same kind of code as LogPothole.</div>
+    </div>
+    <div class="msg" id="setupMsg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="saveSetup()">Save</button>
+      <button class="btn secondary" onclick="closeSetup()">Close</button>
+    </div>
+    <div class="field-hint" style="margin-top:14px;">Follow-up rule: a lead with no due date gets flagged at <b>15, 30 and 45 days</b> after the last contact. After 45 days it asks you to push it or park it.</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ===================== config ===================== */
+const REPO       = 'arlito331/powerdash';
+const DATA_PATH  = 'data/leads.json';
+const API_BASE   = `https://api.github.com/repos/${REPO}/contents/`;
+const IS_LOCAL   = ['localhost','127.0.0.1','::1'].includes(location.hostname) || location.protocol === 'file:';
+const RAW_BASE   = IS_LOCAL ? './' : `https://raw.githubusercontent.com/${REPO}/main/`;
+const MILESTONES = [15, 30, 45];   // the follow-up cadence, in days since last contact
+
+const STAGES = [
+  {id:'contacted', label:'Contacted',          wait:'us'},
+  {id:'sample',    label:'Sample / demo',      wait:'us'},
+  {id:'trial',     label:'Trial in progress',  wait:'them'},
+  {id:'results',   label:'Waiting for results',wait:'them'},
+  {id:'quote',     label:'Quote sent',         wait:'them'},
+  {id:'contract',  label:'Contract sent',      wait:'them'},
+  {id:'signed',    label:'Signed',             wait:'us'},
+  {id:'payment',   label:'Payment pending',    wait:'them'},
+  {id:'active',    label:'Delivered / active', wait:'us'},
+  {id:'parked',    label:'Parked / cold',      wait:'none'}
+];
+const stageOf = id => STAGES.find(s => s.id === id) || STAGES[0];
+const DONE    = ['signed','active'];
+
+let leads = [], dataLoadOK = false, who = 'AA', token = '';
+let editingId = null, touchingId = null, pickLat = null, pickLng = null;
+let leadMap = null, pickMap = null, pickMarker = null, markerLayer = null;
+
+/* ===================== dates ===================== */
+const todayISO = () => new Date().toLocaleDateString('en-CA');          // YYYY-MM-DD, local
+const dayNum   = iso => Math.floor(new Date(iso + 'T12:00:00').getTime() / 86400000);
+const daysSince = iso => dayNum(todayISO()) - dayNum(iso);
+const daysUntil = iso => dayNum(iso) - dayNum(todayISO());
+function fmtShort(iso){
+  if (!iso) return '—';
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+
+/* ===================== the follow-up engine =====================
+   One rule decides everything the dashboard, the map and the email show:
+   an explicit due date wins; with no due date the 15/30/45-day cadence
+   counts from the last contact; a lead with neither is itself a problem. */
+function dueInfo(lead){
+  if (lead.stage === 'parked') return {state:'calm', days:0, label:'Parked', tag:''};
+  if (lead.next_date){
+    const u = daysUntil(lead.next_date), act = lead.next_action || 'Next step not written down';
+    if (u < 0)  return {state:'overdue', days:-u, label:act, tag:'due'};
+    if (u === 0) return {state:'today',  days:0,  label:act, tag:'due'};
+    if (u <= 7)  return {state:'soon',   days:u,  label:act, tag:'due'};
+    return {state:'calm', days:u, label:act, tag:'due'};
+  }
+  if (lead.last_contact){
+    const n = daysSince(lead.last_contact);
+    let passed = null;
+    for (const m of MILESTONES) if (n >= m) passed = m;
+    if (passed === 45) return {state:'overdue', days:n-45, label:`Quiet ${n} days — push it or park it`, tag:'45d'};
+    if (passed)        return {state:'overdue', days:n-passed, label:`${passed}-day follow-up (quiet ${n} days)`, tag:passed+'d'};
+    const u = MILESTONES[0] - n;
+    return {state: u <= 7 ? 'soon' : 'calm', days:u, label:lead.next_action || `15-day follow-up in ${u} days`, tag:'15d'};
+  }
+  return {state:'overdue', days:0, label:'No next action and no last contact — decide something', tag:'none'};
+}
+const liveLeads = () => leads.filter(l => l.stage !== 'parked');
+function pinColor(lead){
+  const d = dueInfo(lead);
+  if (lead.stage === 'parked') return '#555';
+  if (d.state === 'overdue')   return '#FF3B3B';
+  if (DONE.includes(lead.stage)) return '#46C97E';
+  const w = lead.waiting_on || stageOf(lead.stage).wait;
+  return w === 'them' ? '#3F7FE0' : w === 'factory' ? '#9b7fe0' : '#F0A030';
+}
+
+/* ===================== load / save ===================== */
+async function loadLeads(){
+  let remote = null;
+  try {
+    const r = await fetch(RAW_BASE + DATA_PATH + '?cb=' + Date.now(), {cache:'no-store'});
+    if (r.ok) remote = await r.json();
+  } catch(e){ /* offline — fall through */ }
+  const local = JSON.parse(localStorage.getItem('pd_leads') || 'null');
+  if (Array.isArray(remote)){
+    dataLoadOK = true;
+    leads = Array.isArray(local) ? mergeLists(remote, local) : remote;
+    banner('loadBanner', '');
+  } else if (Array.isArray(local)){
+    dataLoadOK = false;
+    leads = local;
+    banner('loadBanner', 'Could not read the shared file just now — showing what is saved on this device. Changes will not reach Joel until it loads.');
+  } else {
+    dataLoadOK = false; leads = [];
+    banner('loadBanner', 'No data yet. Add your first lead with + New lead.');
+  }
+  leads.forEach(normalize);
+}
+function normalize(l){
+  l.log = l.log || [];
+  l.waiting_on = l.waiting_on || stageOf(l.stage).wait;
+  l.updated_at = l.updated_at || '1970-01-01T00:00:00Z';
+}
+/* newest-wins per lead, so two phones editing different leads never */
+/* erase each other (the trap LogPothole hit).                      */
+function mergeLists(a, b){
+  const by = new Map();
+  for (const l of [...a, ...b]){
+    const prev = by.get(l.id);
+    if (!prev || (l.updated_at || '') > (prev.updated_at || '')) by.set(l.id, l);
+  }
+  return [...by.values()];
+}
+function persist(){
+  localStorage.setItem('pd_leads', JSON.stringify(leads));
+}
+async function pushRemote(){
+  if (!token) return {ok:false, why:'no code'};
+  if (!dataLoadOK) return {ok:false, why:'shared file did not load — not overwriting it'};
+  try{
+    const head = await fetch(API_BASE + DATA_PATH + '?ref=main', {headers:ghHeaders(), cache:'no-store'});
+    let sha = null;
+    if (head.ok){
+      const j = await head.json();
+      sha = j.sha;
+      const remote = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+      if (Array.isArray(remote)) leads = mergeLists(remote, leads);
+    }
+    const body = {
+      message: `leads update (${who})`,
+      content: btoa(unescape(encodeURIComponent(JSON.stringify(leads, null, 1)))),
+      branch : 'main'
+    };
+    if (sha) body.sha = sha;
+    const put = await fetch(API_BASE + DATA_PATH, {method:'PUT', headers:ghHeaders(), body:JSON.stringify(body)});
+    if (!put.ok) return {ok:false, why:`GitHub said ${put.status}`};
+    persist();
+    return {ok:true};
+  } catch(e){ return {ok:false, why:e.message}; }
+}
+const ghHeaders = () => ({Authorization:`token ${token}`, Accept:'application/vnd.github+json'});
+
+async function saveAll(msgEl){
+  persist(); renderAll();
+  const r = await pushRemote();
+  if (msgEl){
+    const el = document.getElementById(msgEl);
+    el.className = 'msg ' + (r.ok ? 'ok' : 'err');
+    el.textContent = r.ok ? 'Saved and shared.' : 'Saved on this device only — ' + r.why;
+  }
+}
+
+/* ===================== rendering ===================== */
+function renderAll(){ renderToday(); renderLeads(); renderReports(); renderMap(); }
+
+function renderToday(){
+  const groups = {overdue:[], today:[], soon:[], calm:[]};
+  leads.forEach(l => groups[dueInfo(l).state].push(l));
+  const sortBy = arr => arr.sort((a,b) => dueInfo(b).days - dueInfo(a).days);
+  document.getElementById('tOverdue').textContent = groups.overdue.length;
+  document.getElementById('tToday').textContent   = groups.today.length;
+  document.getElementById('tWeek').textContent    = groups.soon.length;
+  document.getElementById('tActive').textContent  = liveLeads().length;
+  document.getElementById('tTons').textContent    = Math.round(liveLeads().reduce((s,l) => s + (+l.tons || 0), 0));
+
+  const titles = {overdue:'Late — do these first', today:'Due today', soon:'This week', calm:'Calm'};
+  let html = '';
+  for (const k of ['overdue','today','soon','calm']){
+    if (!groups[k].length) continue;
+    html += `<div class="group-label">${titles[k]} · ${groups[k].length}</div>`;
+    html += sortBy(groups[k]).map(l => rowHTML(l)).join('');
+  }
+  document.getElementById('dueList').innerHTML = html || '<div class="empty">Nothing on the list. Add a lead to get started.</div>';
+  banner('sampleBanner', leads.some(l => l.sample) ? 'x' : '');
+}
+
+function rowHTML(l){
+  const d = dueInfo(l), s = stageOf(l.stage);
+  const cls = d.state === 'overdue' ? 'ov' : d.state === 'today' ? 'today' : d.state === 'soon' ? 'soon' : 'calm';
+  const badge = d.state === 'overdue'
+      ? `<div class="d" style="color:var(--red)">${d.days || '\u2022'}</div><div class="l">${d.days ? 'days late' : 'due now'}</div>`
+    : d.state === 'today' ? `<div class="d" style="color:var(--orange)">\u2022</div><div class="l">today</div>`
+    : `<div class="d" style="color:var(--muted)">${d.days}</div><div class="l">days</div>`;
+  const w = l.waiting_on || s.wait;
+  const waitChip = w === 'none' ? '' : `<span class="chip ${w}">${w === 'us' ? 'our move' : w === 'them' ? 'their move' : 'factory'}</span>`;
+  const place = [l.city, l.country].filter(Boolean).join(', ');
+  return `
+  <div class="row ${cls}" id="row-${l.id}">
+    <div class="row-head" onclick="toggleRow('${l.id}')">
+      <div class="row-badge">${badge}</div>
+      <div class="row-info">
+        <div class="row-name">${esc(l.name || '(no name)')}</div>
+        <div class="row-meta">${esc(place || '—')}${l.tons ? ' · ' + l.tons + ' t' : ''}${l.usd ? ' · $' + Number(l.usd).toLocaleString() : ''}</div>
+        <div class="row-action"><b>${esc(d.label)}</b></div>
+        <div style="margin-top:6px;">
+          <span class="chip stage">${s.label}</span>${waitChip}<span class="chip owner">${esc(l.owner || '—')}</span>
+        </div>
+      </div>
+      <div class="row-chev">▶</div>
+    </div>
+    <div class="row-detail">
+      <div class="row-meta" style="margin-bottom:10px;">
+        Last contact ${fmtShort(l.last_contact)} · Due ${fmtShort(l.next_date)}
+        ${l.contact ? ' · ' + esc(l.contact) : ''}${l.phone ? ' · ' + esc(l.phone) : ''}
+      </div>
+      ${l.notes ? `<div class="row-action" style="margin-bottom:10px;">${esc(l.notes)}</div>` : ''}
+      <div class="btn-row" style="margin-bottom:12px;">
+        <button class="btn small" onclick="openTouch('${l.id}')">Log a touch</button>
+        <button class="btn small secondary" onclick="openLead('${l.id}')">Edit</button>
+        ${l.phone ? `<a class="btn small secondary" style="text-decoration:none;" href="https://wa.me/${l.phone.replace(/[^0-9]/g,'')}" target="_blank">WhatsApp them</a>` : ''}
+        ${l.lat ? `<button class="btn small secondary" onclick="focusOnMap('${l.id}')">Map</button>` : ''}
+      </div>
+      ${l.log.length ? `<div class="card-title" style="margin:0 0 6px;">History</div>` +
+        l.log.slice().reverse().map(e => `<div class="log-line"><span class="when">${fmtShort(e.date)}</span>${esc(e.note)}${e.by ? ` <span class="when">· ${esc(e.by)}</span>` : ''}</div>`).join('')
+        : '<div class="row-meta">No history yet.</div>'}
+    </div>
+  </div>`;
+}
+function toggleRow(id){ document.querySelectorAll(`#row-${id}`).forEach(r => r.classList.toggle('open')); }
+
+function renderLeads(){
+  const q  = (document.getElementById('qSearch').value || '').toLowerCase();
+  const st = document.getElementById('qStage').value;
+  const co = document.getElementById('qCountry').value;
+  const list = leads.filter(l => {
+    if (st && l.stage !== st) return false;
+    if (co && (l.country || '') !== co) return false;
+    if (!q) return true;
+    return [l.name, l.company, l.city, l.country, l.contact, l.notes].filter(Boolean).join(' ').toLowerCase().includes(q);
+  }).sort((a,b) => STAGES.findIndex(s=>s.id===a.stage) - STAGES.findIndex(s=>s.id===b.stage) || dueInfo(b).days - dueInfo(a).days);
+  document.getElementById('leadList').innerHTML = list.length ? list.map(rowHTML).join('') : '<div class="empty">Nothing matches.</div>';
+}
+
+function renderMap(){
+  if (!leadMap) return;
+  if (!markerLayer) markerLayer = L.layerGroup().addTo(leadMap);
+  markerLayer.clearLayers();
+  const pts = [];
+  leads.filter(l => l.lat && l.lng).forEach(l => {
+    const d = dueInfo(l), s = stageOf(l.stage);
+    const m = L.circleMarker([l.lat, l.lng], {
+      radius: d.state === 'overdue' ? 10 : 8, color:'#0D0D0D', weight:2,
+      fillColor: pinColor(l), fillOpacity:.95
+    }).bindPopup(`
+      <div class="pop-name">${esc(l.name || '')}</div>
+      <div class="pop-meta">${esc([l.city, l.country].filter(Boolean).join(', '))} · ${s.label}${l.tons ? ' · ' + l.tons + ' t' : ''}</div>
+      <div class="pop-act">${esc(d.label)}</div>
+      <div class="pop-links">
+        ${l.phone ? `<a href="https://wa.me/${l.phone.replace(/[^0-9]/g,'')}" target="_blank">WhatsApp</a>` : ''}
+        <a href="#" onclick="openLead('${l.id}');return false;">Open</a>
+      </div>`);
+    markerLayer.addLayer(m);
+    pts.push([l.lat, l.lng]);
+  });
+  if (pts.length) leadMap.fitBounds(pts, {padding:[40,40], maxZoom:9});
+}
+function focusOnMap(id){
+  const l = leads.find(x => x.id === id); if (!l || !l.lat) return;
+  showTab('map');
+  setTimeout(() => { leadMap.setView([l.lat, l.lng], 12); }, 120);
+}
+
+function renderReports(){
+  document.getElementById('repStanding').textContent = buildStanding();
+  document.getElementById('repFactory').textContent  = buildFactory();
+  document.getElementById('repDue').textContent      = buildDueReport();
+}
+
+/* ===================== the three reports ===================== */
+const nice = l => `${l.name || '(no name)'}${l.city ? ' (' + l.city + ')' : ''}`;
+function buildStanding(){
+  const day = fmtShort(todayISO());
+  const L = [`PowerFix — standing ${day}`, ''];
+  const groups = {overdue:[], today:[], soon:[]};
+  leads.forEach(l => { const s = dueInfo(l).state; if (groups[s]) groups[s].push(l); });
+  if (groups.overdue.length){
+    L.push(`LATE (${groups.overdue.length})`);
+    groups.overdue.sort((a,b)=>dueInfo(b).days-dueInfo(a).days).forEach(l => {
+      const d = dueInfo(l); L.push(`• ${nice(l)} — ${d.label}${d.days ? ` · ${d.days}d late` : ''} [${l.owner || '?'}]`);
+    });
+    L.push('');
+  }
+  if (groups.today.length){
+    L.push(`TODAY (${groups.today.length})`);
+    groups.today.forEach(l => L.push(`• ${nice(l)} — ${dueInfo(l).label} [${l.owner || '?'}]`));
+    L.push('');
+  }
+  if (groups.soon.length){
+    L.push(`THIS WEEK (${groups.soon.length})`);
+    groups.soon.sort((a,b)=>dueInfo(a).days-dueInfo(b).days).forEach(l => L.push(`• ${nice(l)} — ${dueInfo(l).label} · ${fmtShort(l.next_date) !== '—' ? fmtShort(l.next_date) : 'in ' + dueInfo(l).days + 'd'} [${l.owner || '?'}]`));
+    L.push('');
+  }
+  const byStage = STAGES.filter(s => s.id !== 'parked').map(s => {
+    const n = leads.filter(l => l.stage === s.id);
+    return n.length ? `${s.label}: ${n.length}` : null;
+  }).filter(Boolean);
+  L.push('PIPELINE');
+  L.push(byStage.join(' · '));
+  const tons = Math.round(liveLeads().reduce((s,l) => s + (+l.tons || 0), 0));
+  const usd  = liveLeads().reduce((s,l) => s + (+l.usd || 0), 0);
+  L.push(`${liveLeads().length} live leads · ${tons} t · $${usd.toLocaleString()}`);
+  return L.join('\n');
+}
+function buildFactory(){
+  const tonsIn = ids => Math.round(leads.filter(l => ids.includes(l.stage)).reduce((s,l) => s + (+l.tons || 0), 0));
+  const L = [`PowerFix pipeline — ${fmtShort(todayISO())}`, ''];
+  L.push(`Signed / delivered: ${tonsIn(['signed','active','payment'])} t`);
+  L.push(`Contract out:       ${tonsIn(['contract'])} t`);
+  L.push(`Quoted:             ${tonsIn(['quote'])} t`);
+  L.push(`Trials running:     ${tonsIn(['trial','results'])} t`);
+  L.push(`Early stage:        ${tonsIn(['contacted','sample'])} t`);
+  const fac = leads.filter(l => (l.waiting_on || stageOf(l.stage).wait) === 'factory' && l.stage !== 'parked');
+  L.push('');
+  if (fac.length){
+    L.push(`WAITING ON FACTORY (${fac.length})`);
+    fac.forEach(l => L.push(`• ${nice(l)} — ${l.next_action || 'pending'}${l.next_date ? ' · ' + fmtShort(l.next_date) : ''}`));
+  } else {
+    L.push('Nothing waiting on the factory.');
+  }
+  const soon = leads.filter(l => ['contract','signed','payment'].includes(l.stage));
+  L.push('');
+  L.push(`Close to order: ${soon.length} deals · ${Math.round(soon.reduce((s,l)=>s+(+l.tons||0),0))} t`);
+  return L.join('\n');
+}
+function buildDueReport(){
+  const L = [`Follow-ups due — ${fmtShort(todayISO())}`, ''];
+  const items = leads.map(l => ({l, d:dueInfo(l)})).filter(x => ['overdue','today','soon'].includes(x.d.state))
+    .sort((a,b) => {
+      const rank = {overdue:0, today:1, soon:2};
+      // late: most overdue first; upcoming: soonest first
+      return rank[a.d.state] - rank[b.d.state] ||
+             (a.d.state === 'soon' ? a.d.days - b.d.days : b.d.days - a.d.days);
+    });
+  if (!items.length) return 'Follow-ups due — nothing. Everything has a date in the future.';
+  items.forEach(({l,d}) => {
+    const mark = d.state === 'overdue' ? 'LATE' : d.state === 'today' ? 'TODAY' : `in ${d.days}d`;
+    L.push(`[${mark}] ${nice(l)} · ${stageOf(l.stage).label}`);
+    L.push(`   ${d.label} — ${l.owner || '?'}${l.phone ? ' · ' + l.phone : ''}`);
+  });
+  return L.join('\n');
+}
+
+/* ===================== actions ===================== */
+function shareWhatsApp(text){
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+async function copyText(text, btn){
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy', 1400); }
+  catch(e){ btn.textContent = 'Copy failed'; }
+}
+function openLead(id){
+  editingId = id || null;
+  const l = id ? leads.find(x => x.id === id) : null;
+  document.getElementById('leadModalTitle').textContent = l ? 'Edit lead' : 'New lead';
+  document.getElementById('delBtn').style.display = l ? '' : 'none';
+  const v = (el, val) => document.getElementById(el).value = val || '';
+  v('fName', l?.name); v('fCompany', l?.company); v('fContact', l?.contact); v('fPhone', l?.phone);
+  v('fEmail', l?.email); v('fCountry', l?.country); v('fCity', l?.city); v('fTons', l?.tons);
+  v('fUsd', l?.usd); v('fAction', l?.next_action); v('fDate', l?.next_date);
+  v('fLast', l?.last_contact || (l ? '' : todayISO())); v('fNotes', l?.notes);
+  document.getElementById('fOwner').value   = l?.owner || who;
+  document.getElementById('fStage').value   = l?.stage || 'contacted';
+  document.getElementById('fWaiting').value = l?.waiting_on || stageOf(l?.stage).wait;
+  document.getElementById('leadMsg').textContent = '';
+  document.getElementById('placeResults').innerHTML = '';
+  pickLat = l?.lat || null; pickLng = l?.lng || null;
+  document.getElementById('leadModal').classList.add('open');
+  setTimeout(initPickMap, 60);
+}
+function closeLead(){ document.getElementById('leadModal').classList.remove('open'); }
+async function saveLead(){
+  const g = el => document.getElementById(el).value.trim();
+  if (!g('fName')) { const m = document.getElementById('leadMsg'); m.className='msg err'; m.textContent='Give it a name.'; return; }
+  const now = new Date().toISOString();
+  let l = editingId ? leads.find(x => x.id === editingId) : null;
+  if (!l){ l = {id:'L' + Date.now().toString(36), created_at:now, log:[]}; leads.push(l); }
+  Object.assign(l, {
+    name:g('fName'), company:g('fCompany'), contact:g('fContact'), phone:g('fPhone'), email:g('fEmail'),
+    country:g('fCountry'), city:g('fCity'), stage:g('fStage'), waiting_on:g('fWaiting'),
+    tons:g('fTons') ? +g('fTons') : null, usd:g('fUsd') ? +g('fUsd') : null,
+    owner:g('fOwner'), next_action:g('fAction'), next_date:g('fDate'), last_contact:g('fLast'),
+    notes:g('fNotes'), lat:pickLat, lng:pickLng, updated_at:now, sample:false
+  });
+  await saveAll('leadMsg');
+  setTimeout(closeLead, 500);
+}
+async function deleteLead(){
+  if (!editingId || !confirm('Delete this lead for everyone?')) return;
+  leads = leads.filter(l => l.id !== editingId);
+  await saveAll('leadMsg');
+  closeLead();
+}
+function openTouch(id){
+  touchingId = id;
+  const l = leads.find(x => x.id === id);
+  document.getElementById('touchTitle').textContent = 'Log a touch — ' + (l.name || '');
+  document.getElementById('tNote').value = '';
+  document.getElementById('tDate').value = todayISO();
+  document.getElementById('tNext').value = '';
+  document.getElementById('tAction').value = '';
+  document.getElementById('touchModal').classList.add('open');
+}
+function closeTouch(){ document.getElementById('touchModal').classList.remove('open'); }
+async function saveTouch(){
+  const l = leads.find(x => x.id === touchingId); if (!l) return;
+  const note = document.getElementById('tNote').value.trim();
+  const date = document.getElementById('tDate').value || todayISO();
+  const next = document.getElementById('tNext').value;
+  const act  = document.getElementById('tAction').value.trim();
+  if (note) l.log.push({date, note, by:who});
+  l.last_contact = date;
+  if (next) l.next_date = next;
+  if (act)  l.next_action = act;
+  l.updated_at = new Date().toISOString();
+  closeTouch();
+  await saveAll(null);
+}
+function clearSamples(){
+  if (!confirm('Remove the example leads?')) return;
+  leads = leads.filter(l => !l.sample);
+  saveAll(null);
+}
+function banner(id, text){
+  const el = document.getElementById(id);
+  if (!text){ el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  if (id === 'loadBanner') document.getElementById('loadBannerText').textContent = text;
+}
+
+/* ===================== place picking ===================== */
+function initPickMap(){
+  if (!pickMap){
+    pickMap = L.map('pickMap', {zoomControl:true}).setView([9.0, -79.5], 6);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {maxZoom:16, attribution:'Esri'}).addTo(pickMap);
+    pickMap.on('click', e => setPick(e.latlng.lat, e.latlng.lng));
+  }
+  pickMap.invalidateSize();
+  if (pickLat) setPick(pickLat, pickLng, 11); else showCoord();
+}
+function setPick(lat, lng, zoom){
+  pickLat = +lat.toFixed(6); pickLng = +lng.toFixed(6);
+  if (pickMarker) pickMap.removeLayer(pickMarker);
+  pickMarker = L.circleMarker([pickLat, pickLng], {radius:9, color:'#0D0D0D', weight:2, fillColor:'#46C97E', fillOpacity:.95}).addTo(pickMap);
+  pickMap.setView([pickLat, pickLng], zoom || pickMap.getZoom());
+  showCoord();
+}
+function showCoord(){
+  document.getElementById('coordOut').textContent = pickLat
+    ? `Point set: ${pickLat}, ${pickLng}` : 'No point set — the lead just won’t show on the map.';
+}
+async function searchPlace(){
+  const q = document.getElementById('fPlace').value.trim();
+  const box = document.getElementById('placeResults');
+  if (!q) return;
+  box.innerHTML = '<div class="sr-result">Searching…</div>';
+  try{
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(q));
+    const j = await r.json();
+    box.innerHTML = j.length ? j.map(p =>
+      `<div class="sr-result" onclick="pickResult(${p.lat},${p.lon})"><div>${esc(p.display_name.split(',')[0])}</div><div class="sr-sub">${esc(p.display_name)}</div></div>`
+    ).join('') : '<div class="sr-result">Nothing found.</div>';
+  } catch(e){ box.innerHTML = '<div class="sr-result">Search failed — tap the map instead.</div>'; }
+}
+function pickResult(lat, lng){
+  document.getElementById('placeResults').innerHTML = '';
+  setPick(+lat, +lng, 11);
+}
+
+/* ===================== setup / tabs ===================== */
+function openSetup(){
+  document.getElementById('sWho').value = who;
+  document.getElementById('sToken').value = token;
+  document.getElementById('setupMsg').textContent = '';
+  document.getElementById('setupModal').classList.add('open');
+}
+function closeSetup(){ document.getElementById('setupModal').classList.remove('open'); }
+async function saveSetup(){
+  who = document.getElementById('sWho').value;
+  const t = document.getElementById('sToken').value.trim();
+  localStorage.setItem('pd_who', who);
+  const msg = document.getElementById('setupMsg');
+  if (t && t !== token){
+    msg.className = 'msg'; msg.textContent = 'Checking the code…';
+    const ok = await fetch(`https://api.github.com/repos/${REPO}`, {headers:{Authorization:`token ${t}`}}).then(r => r.ok).catch(() => false);
+    if (!ok){ msg.className = 'msg err'; msg.textContent = 'GitHub did not accept that code.'; return; }
+  }
+  token = t;
+  if (token) localStorage.setItem('pd_gh_token', token); else localStorage.removeItem('pd_gh_token');
+  msg.className = 'msg ok'; msg.textContent = 'Saved.';
+  paintWho();
+  setTimeout(closeSetup, 600);
+}
+function switchWho(){
+  who = who === 'AA' ? 'JK' : 'AA';
+  localStorage.setItem('pd_who', who);
+  paintWho();
+}
+function paintWho(){
+  document.getElementById('whoChip').textContent = who;
+  document.getElementById('gearDot').className = 'gear-dot' + (token ? ' ok' : '');
+  document.getElementById('hdrSub').textContent = token ? 'Pipeline & follow-ups · shared' : 'Pipeline & follow-ups · this device only';
+}
+function showTab(t){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.getElementById('view-' + t).classList.add('active');
+  if (t === 'map'){
+    if (!leadMap){
+      leadMap = L.map('leadMap', {zoomControl:true}).setView([9.0, -79.5], 5);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {maxZoom:16, attribution:'Esri'}).addTo(leadMap);
+    }
+    setTimeout(() => { leadMap.invalidateSize(); renderMap(); }, 60);
+  }
+  if (t === 'reports') renderReports();
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ===================== boot ===================== */
+function fillSelects(){
+  const opts = STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+  document.getElementById('fStage').innerHTML = opts;
+  document.getElementById('qStage').innerHTML = '<option value="">All stages</option>' + opts;
+  const countries = [...new Set(leads.map(l => l.country).filter(Boolean))].sort();
+  document.getElementById('qCountry').innerHTML = '<option value="">All countries</option>' + countries.map(c => `<option>${esc(c)}</option>`).join('');
+}
+(async function boot(){
+  who   = localStorage.getItem('pd_who') || 'AA';
+  token = localStorage.getItem('pd_gh_token') || '';
+  paintWho();
+  await loadLeads();
+  fillSelects();
+  renderAll();
+})();
+</script>
+</body>
+</html>
