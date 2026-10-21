@@ -1,8 +1,8 @@
 name: Weekly standing
 
 # 08:00 Panama (13:00 UTC) every Monday: the standing for you and Joel, then
-# the short pipeline report for the factory. Change --via email to --via auto
-# once WhatsApp is set up at Meta.
+# the short pipeline report for the factory. --via auto picks whichever channel
+# is configured: WhatsApp if the Meta template is live, otherwise Gmail or SMTP.
 on:
   schedule:
     - cron: '0 13 * * 1'
@@ -19,15 +19,19 @@ jobs:
       WA_TOKEN:    ${{ secrets.WA_TOKEN }}
       WA_PHONE_ID: ${{ secrets.WA_PHONE_ID }}
       WA_TEMPLATE: ${{ secrets.WA_TEMPLATE }}
+      GMAIL_CLIENT_ID:     ${{ secrets.GMAIL_CLIENT_ID }}
+      GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+      GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+      GMAIL_SENDER:        ${{ secrets.GMAIL_SENDER }}
     steps:
       - uses: actions/checkout@v4
       - name: Standing — you and Joel
         env:
           MAIL_TO: ${{ secrets.MAIL_TO }}
           WA_TO:   ${{ secrets.WA_TO }}
-        run: python3 tools/followups.py standing --send --via email --always
+        run: python3 tools/followups.py standing --send --via auto --always
       - name: Pipeline — factory
         env:
           MAIL_TO: ${{ secrets.MAIL_TO_FACTORY || secrets.MAIL_TO }}
           WA_TO:   ${{ secrets.WA_TO_FACTORY || secrets.WA_TO }}
-        run: python3 tools/followups.py factory --send --via email --always
+        run: python3 tools/followups.py factory --send --via auto --always

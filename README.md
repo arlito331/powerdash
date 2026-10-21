@@ -78,7 +78,13 @@ Each channel gets the length it is good at:
 | --- | --- | --- |
 | WhatsApp | one line: "3 late, 1 due today… Worst: X, 6d late" + link | GitHub or the Mac |
 | iMessage | the short list, up to 6 items + link | **only the Mac** |
-| Email | the full list with phone numbers | GitHub or the Mac |
+| Gmail | the full list, through the Gmail API | GitHub or the Mac |
+| Email | the same, through plain SMTP | GitHub or the Mac |
+
+Gmail and Email are two ways to the same inbox. **Gmail is the one to use** —
+PotholeRadar already sends this way, so the Google credentials exist and no
+app password or 2-Step fiddling is needed. SMTP is the fallback if you would
+rather use an app password.
 
 Two schedules, both already written:
 
@@ -89,8 +95,20 @@ Two schedules, both already written:
 
 ### Which one to turn on
 
-**Email** is the one that just works — add the secrets below and it runs in the
-cloud, whether or not your Mac is awake.
+**Gmail** is the one that just works, and reuses what PotholeRadar already has.
+GitHub never shows a secret back, so the refresh token has to be minted once:
+
+```
+python3 tools/gmail-setup.py
+```
+
+It reads the client id and secret out of `APPS/KEYS/client_secret_*.json`,
+opens Google for approval, and prints the three values to paste into the repo
+secrets. Nothing is written to disk.
+
+**Email (SMTP)** is the alternative: a Gmail **app password**
+(myaccount.google.com/apppasswords, needs 2-Step Verification on) in
+`SMTP_PASS`, with `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `MAIL_TO`.
 
 **iMessage** is free and instant, but only a Mac can send it, so the Mac has to
 be awake at 7am:
@@ -131,8 +149,10 @@ Settings → Secrets and variables → Actions:
 
 | Secret | What to put |
 | --- | --- |
-| `SMTP_HOST` / `SMTP_PORT` | `smtp.gmail.com` / `587` |
-| `SMTP_USER` / `SMTP_PASS` | the sending Gmail and a Gmail **app password** |
+| `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` | printed by `tools/gmail-setup.py` |
+| `GMAIL_SENDER` | optional, e.g. `PowerDash <ashourilevy@gmail.com>` |
+| `SMTP_HOST` / `SMTP_PORT` | only for the SMTP fallback: `smtp.gmail.com` / `587` |
+| `SMTP_USER` / `SMTP_PASS` | only for the SMTP fallback: the sending Gmail and an **app password** |
 | `MAIL_TO` | `aa@powerfixinc.com, joelkhafif21@gmail.com` |
 | `MAIL_TO_FACTORY` | optional — who gets the Monday factory report |
 | `WA_TOKEN` | the permanent token from Meta |

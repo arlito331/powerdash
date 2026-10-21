@@ -1,9 +1,10 @@
 name: Daily follow-ups
 
 # 07:00 Panama (12:00 UTC), Monday to Friday.
-# Email for now. Once the WhatsApp template is approved at Meta, change the
-# default below from 'email' to 'auto' and it sends WhatsApp instead, falling
-# back to email by itself. (iMessage cannot run here — only a Mac can send it.)
+# --via auto walks the channels in order — WhatsApp, Gmail, then plain SMTP —
+# and stops at the first one that is configured. So it sends Gmail today and
+# WhatsApp by itself the day the Meta template is approved, with no edit here.
+# (iMessage cannot run on GitHub — only a Mac can send it.)
 on:
   schedule:
     - cron: '0 12 * * 1-5'
@@ -14,9 +15,9 @@ on:
         type: boolean
         default: false
       via:
-        description: 'email, auto, all, or a list like whatsapp,email'
+        description: 'auto, all, or a list like gmail,email'
         type: string
-        default: email
+        default: auto
 
 jobs:
   notify:
@@ -34,7 +35,11 @@ jobs:
           WA_PHONE_ID:  ${{ secrets.WA_PHONE_ID }}
           WA_TO:        ${{ secrets.WA_TO }}
           WA_TEMPLATE:  ${{ secrets.WA_TEMPLATE }}
+          GMAIL_CLIENT_ID:     ${{ secrets.GMAIL_CLIENT_ID }}
+          GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+          GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          GMAIL_SENDER:        ${{ secrets.GMAIL_SENDER }}
         run: >
           python3 tools/followups.py due --send
-          --via ${{ inputs.via || 'email' }}
+          --via ${{ inputs.via || 'auto' }}
           ${{ inputs.always && '--always' || '' }}

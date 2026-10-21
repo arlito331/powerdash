@@ -316,6 +316,45 @@ def send_email(subject, body, to=None):
     return f"email → {', '.join(to)}"
 
 
+def _gmail_access_token():
+    """Swap the long-lived refresh token for an hour-long access token."""
+    import urllib.parse, urllib.request
+    data = urllib.parse.urlencode({
+        "client_id": cfg("gmail_client_id"),
+        "client_secret": cfg("gmail_client_secret"),
+        "refresh_token": cfg("gmail_refresh_token"),
+        "grant_type": "refresh_token",
+    }).encode()
+    with urllib.request.urlopen("https://oauth2.googleapis.com/token", data=data, timeout=30) as r:
+        return json.loads(r.read())["access_token"]
+
+
+def send_gmail(subject, body, to=None):
+    """Gmail API with the same OAuth credentials PotholeRadar uses — no app
+    password, no SMTP. Needs gmail_client_id / _secret / _refresh_token."""
+    import base64, urllib.request
+    to = to or recipients("mail_to")
+    if not to:
+        raise RuntimeError("no mail_to configured")
+    if not all(cfg(k) for k in ("gmail_client_id", "gmail_client_secret", "gmail_refresh_token")):
+        raise RuntimeError("Gmail API not configured (gmail_client_id / _secret / _refresh_token)")
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = cfg("gmail_sender") or "PowerDash <ashourilevy@gmail.com>"
+    msg["To"] = ", ".join(to)
+    msg.set_content(body)
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+    req = urllib.request.Request(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        data=json.dumps({"raw": raw}).encode(),
+        headers={"Authorization": f"Bearer {_gmail_access_token()}",
+                 "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as r:
+        r.read()
+    return f"gmail → {', '.join(to)}"
+
+
 def send_whatsapp(short_text, to=None):
     """WhatsApp Cloud API. A message we start needs an approved template, and
     template variables cannot hold line breaks — so this sends one line."""
@@ -382,7 +421,7 @@ def send_imessage(body, to=None):
     return f"imessage → {', '.join(sent)}"
 
 
-CHANNELS = ("whatsapp", "imessage", "email")
+CHANNELS = ("whatsapp", "imessage", "gmail", "email")
 
 
 def channel_text(ch, body, short, wa_line):
@@ -414,6 +453,8 @@ def dispatch(kind, leads, body, short, subject, via, dry=False):
                 results.append(send_whatsapp(wa_line))
             elif ch == "imessage":
                 results.append(send_imessage(short))
+            elif ch == "gmail":
+                results.append(send_gmail(subject, body))
             elif ch == "email":
                 results.append(send_email(subject, body))
             else:

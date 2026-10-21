@@ -11,6 +11,12 @@
   "wa_template": "powerdash_followups",
   "wa_lang": "en",
 
+  "gmail_note": "Same way PotholeRadar sends. Get these with: python3 tools/gmail-setup.py",
+  "gmail_client_id": "...apps.googleusercontent.com",
+  "gmail_client_secret": "GOCSPX-...",
+  "gmail_refresh_token": "1//0...",
+  "gmail_sender": "PowerDash <ashourilevy@gmail.com>",
+
   "smtp_host": "smtp.gmail.com",
   "smtp_port": "587",
   "smtp_user": "aa@powerfixinc.com",
