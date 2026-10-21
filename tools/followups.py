@@ -372,7 +372,9 @@ def send_gmail(subject, body, to=None):
         raise RuntimeError("Gmail API not configured (gmail_client_id / _secret / _refresh_token)")
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = cfg("gmail_sender") or "PowerDash <ashourilevy@gmail.com>"
+    sender = clean(cfg("gmail_sender")) or clean(cfg("mail_from"))
+    if sender:                      # left out, Gmail fills in the signed-in address
+        msg["From"] = sender
     msg["To"] = ", ".join(to)
     msg.set_content(body)
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()

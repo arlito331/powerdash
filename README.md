@@ -169,10 +169,10 @@ Settings → Secrets and variables → Actions:
 | Secret | What to put |
 | --- | --- |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` | printed by `tools/gmail-setup.py` |
-| `GMAIL_SENDER` | optional, e.g. `PowerDash <ashourilevy@gmail.com>` |
+| `GMAIL_SENDER` | optional, e.g. `PowerDash <you@example.com>` |
 | `SMTP_HOST` / `SMTP_PORT` | only for the SMTP fallback: `smtp.gmail.com` / `587` |
 | `SMTP_USER` / `SMTP_PASS` | only for the SMTP fallback: the sending Gmail and an **app password** |
-| `MAIL_TO` | `aa@powerfixinc.com, joelkhafif21@gmail.com` |
+| `MAIL_TO` | the two of you, comma separated |
 | `MAIL_TO_FACTORY` | optional — who gets the Monday factory report |
 | `WA_TOKEN` | the permanent token from Meta |
 | `WA_PHONE_ID` | the Phone number ID |
