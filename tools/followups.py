@@ -345,7 +345,7 @@ def send_email(subject, body, to=None):
         s.starttls()
         s.login(user, pw)
         s.send_message(msg)
-    return f"email → {', '.join(to)}"
+    return f"email → {shown(to)}"
 
 
 def _gmail_access_token():
@@ -384,7 +384,7 @@ def send_gmail(subject, body, to=None):
     )
     with urllib.request.urlopen(req, timeout=30) as r:
         r.read()
-    return f"gmail → {', '.join(to)}"
+    return f"gmail → {shown(to)}"
 
 
 def send_whatsapp(short_text, to=None):
@@ -423,7 +423,7 @@ def send_whatsapp(short_text, to=None):
             sent.append(number)
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"WhatsApp refused {number}: {e.code} {e.read().decode()[:200]}")
-    return f"whatsapp → {', '.join(sent)}"
+    return f"whatsapp → {shown(sent)}"
 
 
 def send_imessage(body, to=None):
@@ -450,10 +450,18 @@ def send_imessage(body, to=None):
         if r.returncode != 0:
             raise RuntimeError(f"iMessage failed for {handle}: {r.stderr.strip()[:200]}")
         sent.append(handle)
-    return f"imessage → {', '.join(sent)}"
+    return f"imessage → {shown(sent)}"
 
 
 CHANNELS = ("whatsapp", "imessage", "gmail", "email")
+
+
+def shown(to):
+    """On GitHub the run log is public once the repo is, so addresses and
+    phone numbers are counted there rather than named. Locally, say who."""
+    if os.environ.get("GITHUB_ACTIONS"):
+        return f"{len(to)} recipient{'' if len(to) == 1 else 's'}"
+    return ", ".join(to)
 
 
 def channel_text(ch, body, short, wa_line):
