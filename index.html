@@ -168,7 +168,7 @@ a{color:inherit;}
     <div class="summary-tile orange"><div class="n" id="tToday">0</div><div class="l">Today</div></div>
     <div class="summary-tile"><div class="n" id="tWeek">0</div><div class="l">This week</div></div>
     <div class="summary-tile"><div class="n" id="tActive">0</div><div class="l">Live leads</div></div>
-    <div class="summary-tile green"><div class="n" id="tTons">0</div><div class="l">Tons in play</div></div>
+    <div class="summary-tile green"><div class="n" id="tBoxes">0</div><div class="l">Boxes in play</div></div>
   </div>
 
   <div class="btn-row" style="margin-bottom:18px;">
@@ -201,6 +201,7 @@ a{color:inherit;}
     <span><i style="background:#9b7fe0"></i>Waiting on factory</span>
     <span><i style="background:#46C97E"></i>Signed / active</span>
     <span><i style="background:#555"></i>Parked</span>
+    <span><i style="background:#3a3a3c"></i>Not approached</span>
   </div>
 </div>
 
@@ -255,7 +256,7 @@ a{color:inherit;}
       <div class="field"><label>Waiting on</label><select id="fWaiting"><option value="us">Us</option><option value="them">Them</option><option value="factory">Factory</option></select></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Tons (potential)</label><input id="fTons" type="number" step="0.5" placeholder="20"/></div>
+      <div class="field"><label>Boxes (potential)</label><input id="fBoxes" type="number" step="1" placeholder="80"/></div>
       <div class="field"><label>Value US$</label><input id="fUsd" type="number" step="100" placeholder="30000"/></div>
     </div>
     <div class="field"><label>Next action</label><input id="fAction" placeholder="Call about the trial result"/></div>
@@ -354,6 +355,7 @@ const RAW_BASE   = IS_LOCAL ? './' : `https://raw.githubusercontent.com/${REPO}/
 const MILESTONES = [15, 30, 45];   // the follow-up cadence, in days since last contact
 
 const STAGES = [
+  {id:'prospect',  label:'Not contacted',      wait:'none'},
   {id:'contacted', label:'Contacted',          wait:'us'},
   {id:'sample',    label:'Sample / demo',      wait:'us'},
   {id:'trial',     label:'Trial in progress',  wait:'them'},
@@ -387,8 +389,10 @@ function fmtShort(iso){
    One rule decides everything the dashboard, the map and the email show:
    an explicit due date wins; with no due date the 15/30/45-day cadence
    counts from the last contact; a lead with neither is itself a problem. */
+const QUIET = ['parked', 'prospect'];   // no next action is expected of us
 function dueInfo(lead){
-  if (lead.stage === 'parked') return {state:'calm', days:0, label:'Parked', tag:''};
+  if (QUIET.includes(lead.stage))
+    return {state:'calm', days:0, label:lead.stage === 'parked' ? 'Parked' : 'Not approached yet', tag:''};
   if (lead.next_date){
     const u = daysUntil(lead.next_date), act = lead.next_action || 'Next step not written down';
     if (u < 0)  return {state:'overdue', days:-u, label:act, tag:'due'};
@@ -407,9 +411,10 @@ function dueInfo(lead){
   }
   return {state:'overdue', days:0, label:'No next action and no last contact — decide something', tag:'none'};
 }
-const liveLeads = () => leads.filter(l => l.stage !== 'parked');
+const liveLeads = () => leads.filter(l => !QUIET.includes(l.stage));
 function pinColor(lead){
   const d = dueInfo(lead);
+  if (lead.stage === 'prospect') return '#3a3a3c';
   if (lead.stage === 'parked') return '#555';
   if (d.state === 'overdue')   return '#FF3B3B';
   if (DONE.includes(lead.stage)) return '#46C97E';
@@ -574,7 +579,7 @@ function renderToday(){
   document.getElementById('tToday').textContent   = groups.today.length;
   document.getElementById('tWeek').textContent    = groups.soon.length;
   document.getElementById('tActive').textContent  = liveLeads().length;
-  document.getElementById('tTons').textContent    = Math.round(liveLeads().reduce((s,l) => s + (+l.tons || 0), 0));
+  document.getElementById('tBoxes').textContent   = Math.round(liveLeads().reduce((s,l) => s + (+l.boxes || 0), 0));
 
   const titles = {overdue:'Late — do these first', today:'Due today', soon:'This week', calm:'Calm'};
   let html = '';
@@ -603,7 +608,7 @@ function rowHTML(l){
       <div class="row-badge">${badge}</div>
       <div class="row-info">
         <div class="row-name">${esc(l.name || '(no name)')}</div>
-        <div class="row-meta">${esc(place || '—')}${l.tons ? ' · ' + l.tons + ' t' : ''}${l.usd ? ' · $' + Number(l.usd).toLocaleString() : ''}</div>
+        <div class="row-meta">${esc(place || '—')}${l.boxes ? ' · ' + l.boxes + ' boxes' : ''}${l.usd ? ' · $' + Number(l.usd).toLocaleString() : ''}</div>
         <div class="row-action"><b>${esc(d.label)}</b></div>
         <div style="margin-top:6px;">
           <span class="chip stage">${s.label}</span>${waitChip}<span class="chip owner">${esc(l.owner || '—')}</span>
@@ -656,7 +661,7 @@ function renderMap(){
       fillColor: pinColor(l), fillOpacity:.95
     }).bindPopup(`
       <div class="pop-name">${esc(l.name || '')}</div>
-      <div class="pop-meta">${esc([l.city, l.country].filter(Boolean).join(', '))} · ${s.label}${l.tons ? ' · ' + l.tons + ' t' : ''}</div>
+      <div class="pop-meta">${esc([l.city, l.country].filter(Boolean).join(', '))} · ${s.label}${l.boxes ? ' · ' + l.boxes + ' boxes' : ''}</div>
       <div class="pop-act">${esc(d.label)}</div>
       <div class="pop-links">
         ${l.phone ? `<a href="https://wa.me/${l.phone.replace(/[^0-9]/g,'')}" target="_blank">WhatsApp</a>` : ''}
@@ -703,26 +708,26 @@ function buildStanding(){
     groups.soon.sort((a,b)=>dueInfo(a).days-dueInfo(b).days).forEach(l => L.push(`• ${nice(l)} — ${dueInfo(l).label} · ${fmtShort(l.next_date) !== '—' ? fmtShort(l.next_date) : 'in ' + dueInfo(l).days + 'd'} [${l.owner || '?'}]`));
     L.push('');
   }
-  const byStage = STAGES.filter(s => s.id !== 'parked').map(s => {
+  const byStage = STAGES.filter(s => !QUIET.includes(s.id)).map(s => {
     const n = leads.filter(l => l.stage === s.id);
     return n.length ? `${s.label}: ${n.length}` : null;
   }).filter(Boolean);
   L.push('PIPELINE');
   L.push(byStage.join(' · '));
-  const tons = Math.round(liveLeads().reduce((s,l) => s + (+l.tons || 0), 0));
+  const boxes = Math.round(liveLeads().reduce((s,l) => s + (+l.boxes || 0), 0));
   const usd  = liveLeads().reduce((s,l) => s + (+l.usd || 0), 0);
-  L.push(`${liveLeads().length} live leads · ${tons} t · $${usd.toLocaleString()}`);
+  L.push(`${liveLeads().length} live leads · ${boxes} boxes · $${usd.toLocaleString()}`);
   return L.join('\n');
 }
 function buildFactory(){
-  const tonsIn = ids => Math.round(leads.filter(l => ids.includes(l.stage)).reduce((s,l) => s + (+l.tons || 0), 0));
+  const boxesIn = ids => Math.round(leads.filter(l => ids.includes(l.stage)).reduce((s,l) => s + (+l.boxes || 0), 0));
   const L = [`PowerFix pipeline — ${fmtShort(todayISO())}`, ''];
-  L.push(`Signed / delivered: ${tonsIn(['signed','active','payment'])} t`);
-  L.push(`Contract out:       ${tonsIn(['contract'])} t`);
-  L.push(`Quoted:             ${tonsIn(['quote'])} t`);
-  L.push(`Trials running:     ${tonsIn(['trial','results'])} t`);
-  L.push(`Early stage:        ${tonsIn(['contacted','sample'])} t`);
-  const fac = leads.filter(l => (l.waiting_on || stageOf(l.stage).wait) === 'factory' && l.stage !== 'parked');
+  L.push(`Signed / delivered: ${boxesIn(['signed','active','payment'])} boxes`);
+  L.push(`Contract out:       ${boxesIn(['contract'])} boxes`);
+  L.push(`Quoted:             ${boxesIn(['quote'])} boxes`);
+  L.push(`Trials running:     ${boxesIn(['trial','results'])} boxes`);
+  L.push(`Early stage:        ${boxesIn(['contacted','sample'])} boxes`);
+  const fac = leads.filter(l => (l.waiting_on || stageOf(l.stage).wait) === 'factory' && !QUIET.includes(l.stage));
   L.push('');
   if (fac.length){
     L.push(`WAITING ON FACTORY (${fac.length})`);
@@ -732,7 +737,7 @@ function buildFactory(){
   }
   const soon = leads.filter(l => ['contract','signed','payment'].includes(l.stage));
   L.push('');
-  L.push(`Close to order: ${soon.length} deals · ${Math.round(soon.reduce((s,l)=>s+(+l.tons||0),0))} t`);
+  L.push(`Close to order: ${soon.length} deals · ${Math.round(soon.reduce((s,l)=>s+(+l.boxes||0),0))} boxes`);
   return L.join('\n');
 }
 function buildDueReport(){
@@ -768,7 +773,7 @@ function openLead(id){
   document.getElementById('delBtn').style.display = l ? '' : 'none';
   const v = (el, val) => document.getElementById(el).value = val || '';
   v('fName', l?.name); v('fCompany', l?.company); v('fContact', l?.contact); v('fPhone', l?.phone);
-  v('fEmail', l?.email); v('fCountry', l?.country); v('fCity', l?.city); v('fTons', l?.tons);
+  v('fEmail', l?.email); v('fCountry', l?.country); v('fCity', l?.city); v('fBoxes', l?.boxes);
   v('fUsd', l?.usd); v('fAction', l?.next_action); v('fDate', l?.next_date);
   v('fLast', l?.last_contact || (l ? '' : todayISO())); v('fNotes', l?.notes);
   document.getElementById('fOwner').value   = l?.owner || who;
@@ -790,7 +795,7 @@ async function saveLead(){
   Object.assign(l, {
     name:g('fName'), company:g('fCompany'), contact:g('fContact'), phone:g('fPhone'), email:g('fEmail'),
     country:g('fCountry'), city:g('fCity'), stage:g('fStage'), waiting_on:g('fWaiting'),
-    tons:g('fTons') ? +g('fTons') : null, usd:g('fUsd') ? +g('fUsd') : null,
+    boxes:g('fBoxes') ? +g('fBoxes') : null, usd:g('fUsd') ? +g('fUsd') : null,
     owner:g('fOwner'), next_action:g('fAction'), next_date:g('fDate'), last_contact:g('fLast'),
     notes:g('fNotes'), lat:pickLat, lng:pickLng, updated_at:now, sample:false
   });

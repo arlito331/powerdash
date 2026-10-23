@@ -9,8 +9,9 @@ in a JSON file in the repo, a dark map, nothing to install.
 - **Today** — every lead sorted by how late it is. Red = late, orange = due
   today, blue = this week. One tap logs what you did and sets the next date.
 - **Leads** — all of them, searchable, filtered by stage or country.
-- **Map** — a pin per lead. Red = late, orange = waiting on us, blue = waiting
-  on them, purple = waiting on the factory, green = signed or active.
+- **Map** — a pin per lead across Latin America. Red = late, orange = waiting
+  on us, blue = waiting on them, purple = waiting on the factory, green =
+  signed or active, grey = parked or not approached yet.
 - **Reports** — three ready-made texts with a WhatsApp button: the internal
   standing, the short factory report, and the follow-up list.
 - **Reminders** — the follow-up list goes out by itself every weekday morning
@@ -190,18 +191,20 @@ run by hand from the Actions tab — useful the first time.
 {
   "id": "L...", "name": "", "company": "", "contact": "", "phone": "",
   "country": "", "city": "", "lat": 0, "lng": 0,
-  "stage": "contacted|sample|trial|results|quote|contract|signed|payment|active|parked",
+  "stage": "prospect|contacted|sample|trial|results|quote|contract|signed|payment|active|parked",
   "waiting_on": "us|them|factory",
-  "tons": 0, "usd": 0, "owner": "AA|JK",
+  "boxes": 0, "usd": 0, "owner": "AA|JK",
   "next_action": "", "next_date": "YYYY-MM-DD", "last_contact": "YYYY-MM-DD",
   "notes": "", "log": [{"date": "", "note": "", "by": ""}],
   "created_at": "", "updated_at": ""
 }
 ```
 
-The seven leads in there now are **examples** — the banner on the dashboard
-clears them in one tap. The plaintext from before encryption is backed up at
-`APPS/KEYS/leads.json.pre-encryption`.
+Volumes are counted in **boxes**. Countries with no lead yet sit at stage
+`prospect` — they show on the map in grey and never ask for a follow-up.
+The plaintext, for editing by hand, is backed up at
+`APPS/KEYS/leads.json.pre-encryption`; re-encrypt with
+`python3 tools/encrypt_data.py apply`.
 
 Two phones editing at once merge by `updated_at`, newest wins per lead, and the
 app refuses to publish if it could not read the shared file first — the two

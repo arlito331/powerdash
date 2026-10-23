@@ -26,6 +26,7 @@ DATA = ROOT / "data" / "leads.json"      # only on a dev machine
 ENC = ROOT / "data" / "leads.enc"       # what the repo actually holds
 
 STAGES = {
+    "prospect":  ("Not contacted", "none"),
     "contacted": ("Contacted", "us"),
     "sample":    ("Sample / demo", "us"),
     "trial":     ("Trial in progress", "them"),
@@ -37,6 +38,7 @@ STAGES = {
     "active":    ("Delivered / active", "us"),
     "parked":    ("Parked / cold", "none"),
 }
+QUIET = ("parked", "prospect")      # nothing is expected of us there
 TODAY = date.today()
 
 
@@ -54,8 +56,8 @@ def waiting_on(lead):
 
 def due_info(lead):
     """-> (state, days, label). Mirrors dueInfo() in index.html."""
-    if lead.get("stage") == "parked":
-        return "calm", 0, "Parked"
+    if lead.get("stage") in QUIET:
+        return "calm", 0, "Parked" if lead.get("stage") == "parked" else "Not approached yet"
     nd = d(lead.get("next_date"))
     if nd:
         u = (nd - TODAY).days
@@ -110,8 +112,8 @@ def nice(lead):
     return f"{lead.get('name') or '(no name)'}" + (f" ({city})" if city else "")
 
 
-def tons_in(leads, stages):
-    return round(sum(float(l.get("tons") or 0) for l in leads if l.get("stage") in stages))
+def boxes_in(leads, stages):
+    return round(sum(float(l.get("boxes") or 0) for l in leads if l.get("stage") in stages))
 
 
 def report_due(leads):
@@ -145,7 +147,7 @@ def report_due(leads):
 
 
 def report_standing(leads):
-    live = [l for l in leads if l.get("stage") != "parked"]
+    live = [l for l in leads if l.get("stage") not in QUIET]
     groups = {"overdue": [], "today": [], "soon": []}
     for l in leads:
         state, days, label = due_info(l)
@@ -164,28 +166,28 @@ def report_standing(leads):
         out.append("")
     counts = []
     for sid, (label, _) in STAGES.items():
-        if sid == "parked":
+        if sid in QUIET:
             continue
         n = sum(1 for l in leads if l.get("stage") == sid)
         if n:
             counts.append(f"{label}: {n}")
     out.append("PIPELINE")
     out.append(" · ".join(counts))
-    tons = round(sum(float(l.get("tons") or 0) for l in live))
+    boxes = round(sum(float(l.get("boxes") or 0) for l in live))
     usd = sum(float(l.get("usd") or 0) for l in live)
-    out.append(f"{len(live)} live leads · {tons} t · ${usd:,.0f}")
+    out.append(f"{len(live)} live leads · {boxes} boxes · ${usd:,.0f}")
     return "\n".join(out)
 
 
 def report_factory(leads):
     out = [f"PowerFix pipeline — {TODAY:%d %b %Y}", ""]
-    out.append(f"Signed / delivered: {tons_in(leads, ('signed', 'active', 'payment'))} t")
-    out.append(f"Contract out:       {tons_in(leads, ('contract',))} t")
-    out.append(f"Quoted:             {tons_in(leads, ('quote',))} t")
-    out.append(f"Trials running:     {tons_in(leads, ('trial', 'results'))} t")
-    out.append(f"Early stage:        {tons_in(leads, ('contacted', 'sample'))} t")
+    out.append(f"Signed / delivered: {boxes_in(leads, ('signed', 'active', 'payment'))} boxes")
+    out.append(f"Contract out:       {boxes_in(leads, ('contract',))} boxes")
+    out.append(f"Quoted:             {boxes_in(leads, ('quote',))} boxes")
+    out.append(f"Trials running:     {boxes_in(leads, ('trial', 'results'))} boxes")
+    out.append(f"Early stage:        {boxes_in(leads, ('contacted', 'sample'))} boxes")
     out.append("")
-    fac = [l for l in leads if waiting_on(l) == "factory" and l.get("stage") != "parked"]
+    fac = [l for l in leads if waiting_on(l) == "factory" and l.get("stage") not in QUIET]
     if fac:
         out.append(f"WAITING ON FACTORY ({len(fac)})")
         for l in fac:
@@ -196,7 +198,7 @@ def report_factory(leads):
     soon = [l for l in leads if l.get("stage") in ("contract", "signed", "payment")]
     out.append("")
     out.append(f"Close to order: {len(soon)} deals · "
-               f"{round(sum(float(l.get('tons') or 0) for l in soon))} t")
+               f"{round(sum(float(l.get('boxes') or 0) for l in soon))} boxes")
     return "\n".join(out)
 
 
@@ -265,15 +267,15 @@ def short_due(leads, limit=6):
 
 
 def short_standing(leads):
-    live = [l for l in leads if l.get("stage") != "parked"]
-    tons = round(sum(float(l.get("tons") or 0) for l in live))
+    live = [l for l in leads if l.get("stage") not in QUIET]
+    boxes = round(sum(float(l.get("boxes") or 0) for l in live))
     counts = {}
     for l in live:
         counts[l.get("stage")] = counts.get(l.get("stage"), 0) + 1
     order = ("contract", "payment", "quote", "results", "trial", "sample", "contacted", "signed", "active")
     bits = [f"{STAGES[s][0]} {counts[s]}" for s in order if counts.get(s)]
     return (f"PowerDash week — {TODAY:%d %b}\n{summary_line(leads)}\n"
-            f"{len(live)} live · {tons} t\n" + " · ".join(bits) + f"\n{APP_URL}")
+            f"{len(live)} live · {boxes} boxes\n" + " · ".join(bits) + f"\n{APP_URL}")
 
 
 SHORT = {"due": short_due, "standing": short_standing,
