@@ -123,6 +123,10 @@ a{color:inherit;}
 .toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
 .toolbar input,.toolbar select{background:#0a0a0a;border:1px solid var(--border);color:var(--text);border-radius:5px;padding:8px 10px;font-size:12px;outline:none;}
 .toolbar input{flex:1;min-width:140px;}
+.when-row{display:flex;gap:6px;flex-wrap:wrap;}
+.when{background:#0a0a0a;border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:7px 13px;font-size:11px;font-weight:600;cursor:pointer;}
+.when:hover{border-color:#3a3a3a;color:var(--text);}
+.when.on{background:rgba(70,201,126,.14);border-color:var(--accent);color:var(--accent);}
 .empty{color:var(--dim);font-size:12px;padding:18px 0;text-align:center;}
 .leaflet-popup-content-wrapper{background:#1A1A1B;color:#fff;border-radius:8px;}
 .leaflet-popup-tip{background:#1A1A1B;}
@@ -237,41 +241,68 @@ a{color:inherit;}
 <div class="modal-back" id="leadModal">
   <div class="modal">
     <div class="card-title" id="leadModalTitle">New lead</div>
-    <div class="field"><label>Name of the deal</label><input id="fName" placeholder="Municipal patching contract"/></div>
-    <div class="field-row">
-      <div class="field"><label>Company / entity</label><input id="fCompany" placeholder="City hall, ministry or contractor"/></div>
-      <div class="field"><label>Owner</label><select id="fOwner"><option>AA</option><option>JK</option></select></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Contact person</label><input id="fContact" placeholder="Who you deal with"/></div>
-      <div class="field"><label>WhatsApp / phone</label><input id="fPhone" placeholder="+507 0000 0000"/></div>
-    </div>
-    <div class="field"><label>Email</label><input id="fEmail" placeholder="contact@example.com"/></div>
-    <div class="field-row">
-      <div class="field"><label>Country</label><input id="fCountry" placeholder="Panama"/></div>
-      <div class="field"><label>City</label><input id="fCity" placeholder="City"/></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Stage</label><select id="fStage"></select></div>
-      <div class="field"><label>Waiting on</label><select id="fWaiting"><option value="us">Us</option><option value="them">Them</option><option value="factory">Factory</option></select></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Boxes (potential)</label><input id="fBoxes" type="number" step="1" placeholder="80"/></div>
-      <div class="field"><label>Value US$</label><input id="fUsd" type="number" step="100" placeholder="30000"/></div>
-    </div>
-    <div class="field"><label>Next action</label><input id="fAction" placeholder="Call about the trial result"/></div>
-    <div class="field-row">
-      <div class="field"><label>Next action due</label><input id="fDate" type="date"/></div>
-      <div class="field"><label>Last contact</label><input id="fLast" type="date"/></div>
-    </div>
-    <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Anything worth remembering"></textarea></div>
-    <div class="field">
-      <label>Where is it — search or tap the map</label>
-      <div style="display:flex;gap:8px;"><input id="fPlace" placeholder="City, country" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}"/><button class="btn small secondary" onclick="searchPlace()">Find</button></div>
+
+    <!-- five things. everything else is optional and folded away. -->
+    <div class="field"><label>1 · What is it</label>
+      <input id="fName" placeholder="Municipal patching contract"/></div>
+
+    <div class="field"><label>2 · Where</label>
+      <div style="display:flex;gap:8px;">
+        <input id="fPlace" placeholder="City or country" autocomplete="off"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();searchPlace();}"/>
+        <button class="btn small secondary" onclick="searchPlace()">Find</button>
+      </div>
       <div class="search-results" id="placeResults"></div>
-      <div id="pickMap" style="margin-top:8px;"></div>
-      <div class="field-hint" id="coordOut">No point set — the lead just won't show on the map.</div>
+      <div class="field-hint" id="coordOut">Pick a place and it lands on the map.</div>
     </div>
+
+    <div class="field"><label>3 · Stage</label><select id="fStage"></select></div>
+
+    <div class="field"><label>4 · Next action</label>
+      <input id="fAction" placeholder="Call about the trial result"/></div>
+
+    <div class="field"><label>5 · When</label>
+      <div class="when-row" id="whenRow">
+        <button class="when" data-d="1" onclick="setWhen(1)">Tomorrow</button>
+        <button class="when" data-d="3" onclick="setWhen(3)">In 3 days</button>
+        <button class="when" data-d="7" onclick="setWhen(7)">Next week</button>
+        <button class="when" data-d="14" onclick="setWhen(14)">2 weeks</button>
+        <button class="when" data-d="30" onclick="setWhen(30)">A month</button>
+        <button class="when" data-d="" onclick="setWhen(null)">No date</button>
+      </div>
+      <input id="fDate" type="date" style="margin-top:8px;" onchange="paintWhen()"/>
+      <div class="field-hint">With no date it follows the 15 / 30 / 45-day rule from the last contact.</div>
+    </div>
+
+    <button class="btn secondary small" id="moreBtn" onclick="toggleMore()"
+            style="width:100%;margin-bottom:12px;">More details ▾</button>
+
+    <div id="leadMore" style="display:none;">
+      <div class="field-row">
+        <div class="field"><label>Company / entity</label><input id="fCompany" placeholder="City hall, ministry or contractor"/></div>
+        <div class="field"><label>Owner</label><select id="fOwner"><option>AA</option><option>JK</option></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Contact person</label><input id="fContact" placeholder="Who you deal with"/></div>
+        <div class="field"><label>WhatsApp / phone</label><input id="fPhone" placeholder="+507 0000 0000"/></div>
+      </div>
+      <div class="field"><label>Email</label><input id="fEmail" placeholder="contact@example.com"/></div>
+      <div class="field-row">
+        <div class="field"><label>Country</label><input id="fCountry" placeholder="Panama"/></div>
+        <div class="field"><label>City</label><input id="fCity" placeholder="City"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Waiting on</label><select id="fWaiting"><option value="us">Us</option><option value="them">Them</option><option value="factory">Factory</option></select></div>
+        <div class="field"><label>Boxes</label><input id="fBoxes" type="number" step="1" placeholder="80"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Value US$</label><input id="fUsd" type="number" step="100" placeholder="30000"/></div>
+        <div class="field"><label>Last contact</label><input id="fLast" type="date"/></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="fNotes" placeholder="Anything worth remembering"></textarea></div>
+      <div class="field"><label>Fine-tune the pin</label><div id="pickMap"></div></div>
+    </div>
+
     <div class="msg" id="leadMsg"></div>
     <div class="btn-row" style="margin-top:12px;">
       <button class="btn" onclick="saveLead()">Save</button>
@@ -781,9 +812,13 @@ function openLead(id){
   document.getElementById('fWaiting').value = l?.waiting_on || stageOf(l?.stage).wait;
   document.getElementById('leadMsg').textContent = '';
   document.getElementById('placeResults').innerHTML = '';
+  document.getElementById('fPlace').value = [l?.city, l?.country].filter(Boolean).join(', ');
   pickLat = l?.lat || null; pickLng = l?.lng || null;
+  toggleMore(false);
+  paintWhen();
+  showCoord();
   document.getElementById('leadModal').classList.add('open');
-  setTimeout(initPickMap, 60);
+  setTimeout(() => document.getElementById('fName').focus(), 80);
 }
 function closeLead(){ document.getElementById('leadModal').classList.remove('open'); }
 async function saveLead(){
@@ -857,31 +892,72 @@ function initPickMap(){
 }
 function setPick(lat, lng, zoom){
   pickLat = +lat.toFixed(6); pickLng = +lng.toFixed(6);
-  if (pickMarker) pickMap.removeLayer(pickMarker);
-  pickMarker = L.circleMarker([pickLat, pickLng], {radius:9, color:'#0D0D0D', weight:2, fillColor:'#46C97E', fillOpacity:.95}).addTo(pickMap);
-  pickMap.setView([pickLat, pickLng], zoom || pickMap.getZoom());
+  // the picker map lives under More details and may not exist yet — the
+  // point is still recorded, and initPickMap draws it when that opens
+  if (pickMap){
+    if (pickMarker) pickMap.removeLayer(pickMarker);
+    pickMarker = L.circleMarker([pickLat, pickLng], {radius:9, color:'#0D0D0D', weight:2, fillColor:'#46C97E', fillOpacity:.95}).addTo(pickMap);
+    pickMap.setView([pickLat, pickLng], zoom || pickMap.getZoom());
+  }
   showCoord();
 }
 function showCoord(){
+  const where = [document.getElementById('fCity').value, document.getElementById('fCountry').value]
+    .filter(Boolean).join(', ');
   document.getElementById('coordOut').textContent = pickLat
-    ? `Point set: ${pickLat}, ${pickLng}` : 'No point set — the lead just won’t show on the map.';
+    ? `On the map at ${where || pickLat + ', ' + pickLng}`
+    : 'Pick a place and it lands on the map.';
 }
+let _places = [];
 async function searchPlace(){
   const q = document.getElementById('fPlace').value.trim();
   const box = document.getElementById('placeResults');
   if (!q) return;
   box.innerHTML = '<div class="sr-result">Searching…</div>';
   try{
-    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q=' + encodeURIComponent(q));
-    const j = await r.json();
-    box.innerHTML = j.length ? j.map(p =>
-      `<div class="sr-result" onclick="pickResult(${p.lat},${p.lon})"><div>${esc(p.display_name.split(',')[0])}</div><div class="sr-sub">${esc(p.display_name)}</div></div>`
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=' + encodeURIComponent(q));
+    _places = await r.json();
+    box.innerHTML = _places.length ? _places.map((p, i) =>
+      `<div class="sr-result" onclick="pickResult(${i})"><div>${esc(p.display_name.split(',')[0])}</div><div class="sr-sub">${esc(p.display_name)}</div></div>`
     ).join('') : '<div class="sr-result">Nothing found.</div>';
-  } catch(e){ box.innerHTML = '<div class="sr-result">Search failed — tap the map instead.</div>'; }
+  } catch(e){ box.innerHTML = '<div class="sr-result">Search failed — open More details and tap the map.</div>'; }
 }
-function pickResult(lat, lng){
+// One pick fills the pin, the city and the country, so Where is one field.
+function pickResult(i){
+  const p = _places[i]; if (!p) return;
   document.getElementById('placeResults').innerHTML = '';
-  setPick(+lat, +lng, 11);
+  const a = p.address || {};
+  const city = a.city || a.town || a.village || a.municipality || a.county || a.state || '';
+  if (city) document.getElementById('fCity').value = city;
+  if (a.country) document.getElementById('fCountry').value = a.country;
+  document.getElementById('fPlace').value = [city, a.country].filter(Boolean).join(', ') || p.display_name.split(',')[0];
+  setPick(+p.lat, +p.lon, 11);
+}
+
+/* ===================== quick dates ===================== */
+function setWhen(days){
+  const el = document.getElementById('fDate');
+  if (days === null){ el.value = ''; }
+  else {
+    const d = new Date(); d.setDate(d.getDate() + days);
+    el.value = d.toLocaleDateString('en-CA');
+  }
+  paintWhen();
+}
+function paintWhen(){
+  const v = document.getElementById('fDate').value;
+  const diff = v ? daysUntil(v) : null;
+  document.querySelectorAll('#whenRow .when').forEach(b => {
+    const d = b.dataset.d === '' ? null : +b.dataset.d;
+    b.classList.toggle('on', d === diff);
+  });
+}
+function toggleMore(open){
+  const box = document.getElementById('leadMore');
+  const show = open === undefined ? box.style.display === 'none' : open;
+  box.style.display = show ? '' : 'none';
+  document.getElementById('moreBtn').textContent = show ? 'Fewer details ▴' : 'More details ▾';
+  if (show) setTimeout(initPickMap, 60);   // the map needs to be visible to size itself
 }
 
 /* ===================== setup / tabs ===================== */
