@@ -87,25 +87,25 @@ def decrypt(blob):
     try:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError:
-        sys.exit("needs the cryptography package: pip install cryptography")
+        fail("needs the cryptography package: pip install cryptography")
     import base64, binascii
     key = clean(cfg("powerdash_key"))
     if not key:
-        sys.exit("POWERDASH_KEY is not set. Add the repo secret — its value is the "
-                 "single line inside APPS/KEYS/powerdash-master-key.txt")
+        fail("POWERDASH_KEY is not set. Add the repo secret — its value is the "
+             "single line inside APPS/KEYS/powerdash-master-key.txt")
     key = key.split()[-1]          # tolerate a pasted label or stray words
     try:
         raw = base64.b64decode(key, validate=True)
     except (binascii.Error, ValueError):
-        sys.exit(f"POWERDASH_KEY does not look like the key ({len(key)} characters read). "
-                 "Copy the one line from powerdash-master-key.txt, nothing else.")
+        fail(f"POWERDASH_KEY does not look like the key ({len(key)} characters read). "
+             "Copy the one line from powerdash-master-key.txt, nothing else.")
     if len(raw) != 32:
-        sys.exit(f"POWERDASH_KEY decodes to {len(raw)} bytes, expected 32 — "
-                 "it is probably a different value than the key file.")
+        fail(f"POWERDASH_KEY decodes to {len(raw)} bytes, expected 32 — "
+             "it is probably a different value than the key file.")
     try:
         return json.loads(AESGCM(raw).decrypt(blob[:12], blob[12:], None))
     except Exception:
-        sys.exit("POWERDASH_KEY does not open data/leads.enc — right shape, wrong key.")
+        fail("POWERDASH_KEY does not open data/leads.enc — right shape, wrong key.")
 
 
 def load():
@@ -317,6 +317,14 @@ def _local():
         except Exception:
             _LOCAL = {}
     return _LOCAL
+
+
+def fail(msg):
+    """GitHub shows ::error:: lines in the run's Annotations box, which is the
+    part anyone actually sees. Without it the reason hides in the log."""
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(f"::error::{msg}")
+    sys.exit(msg)
 
 
 def clean(v):
@@ -573,9 +581,9 @@ def main():
     for p in problems:
         print("skipped —", p, file=sys.stderr)
     if not results and not problems:
-        print("no channel configured", file=sys.stderr)
+        fail("no channel configured")
     if not results and problems:
-        sys.exit(1)
+        fail("nothing could be sent — " + "; ".join(problems))
 
 
 if __name__ == "__main__":
